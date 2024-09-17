@@ -5,7 +5,7 @@
 MainWindow::MainWindow() : QMainWindow(), uiw(new Ui::Assets)
 {
 	// Chargement de l'interface
-    uiw->setupUi(this);
+	uiw->setupUi(this);
 
 	// Chargement du GLWidget
 	meshWidget = new MeshWidget;
@@ -28,12 +28,12 @@ MainWindow::~MainWindow()
 void MainWindow::CreateActions()
 {
 	// Buttons
-    connect(uiw->boxMesh, SIGNAL(clicked()), this, SLOT(BoxMeshExample()));
-    connect(uiw->sphereImplicit, SIGNAL(clicked()), this, SLOT(SphereImplicitExample()));
-    connect(uiw->resetcameraButton, SIGNAL(clicked()), this, SLOT(ResetCamera()));
-    connect(uiw->wireframe, SIGNAL(clicked()), this, SLOT(UpdateMaterial()));
-    connect(uiw->radioShadingButton_1, SIGNAL(clicked()), this, SLOT(UpdateMaterial()));
-    connect(uiw->radioShadingButton_2, SIGNAL(clicked()), this, SLOT(UpdateMaterial()));
+	connect(uiw->boxMesh, SIGNAL(clicked()), this, SLOT(BoxMeshExample()));
+	connect(uiw->sphereImplicit, SIGNAL(clicked()), this, SLOT(SphereImplicitExample()));
+	connect(uiw->resetcameraButton, SIGNAL(clicked()), this, SLOT(ResetCamera()));
+	connect(uiw->wireframe, SIGNAL(clicked()), this, SLOT(UpdateMaterial()));
+	connect(uiw->radioShadingButton_1, SIGNAL(clicked()), this, SLOT(UpdateMaterial()));
+	connect(uiw->radioShadingButton_2, SIGNAL(clicked()), this, SLOT(UpdateMaterial()));
 
 	// Widget edition
 	connect(meshWidget, SIGNAL(_signalEditSceneLeft(const Ray&)), this, SLOT(editingSceneLeft(const Ray&)));
