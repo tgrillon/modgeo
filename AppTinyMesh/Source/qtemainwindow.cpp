@@ -29,6 +29,7 @@ void MainWindow::CreateActions()
 {
 	// Buttons
 	connect(uiw->boxMesh, SIGNAL(clicked()), this, SLOT(BoxMeshExample()));
+	connect(uiw->triangulatedMesh, SIGNAL(clicked()), this, SLOT(MeshExample()));
 	connect(uiw->sphereImplicit, SIGNAL(clicked()), this, SLOT(SphereImplicitExample()));
 	connect(uiw->resetcameraButton, SIGNAL(clicked()), this, SLOT(ResetCamera()));
 	connect(uiw->wireframe, SIGNAL(clicked()), this, SLOT(UpdateMaterial()));
@@ -58,6 +59,20 @@ void MainWindow::BoxMeshExample()
 		cols[i] = Color(double(i) / 6.0, fmod(double(i) * 39.478378, 1.0), 0.0);
 
 	meshColor = MeshColor(boxMesh, cols, boxMesh.VertexIndexes());
+	UpdateGeometry();
+}
+
+void MainWindow::MeshExample()
+{
+	Mesh triangulatedMesh; 
+	triangulatedMesh.Load("../data/cube.obj");
+
+	std::vector<Color> cols;
+	cols.resize(triangulatedMesh.Vertexes());
+	for (size_t i = 0; i < cols.size(); i++)
+		cols[i] = Color(0.8, 0.8, 0.8);
+
+	meshColor = MeshColor(triangulatedMesh, cols, triangulatedMesh.VertexIndexes());
 	UpdateGeometry();
 }
 

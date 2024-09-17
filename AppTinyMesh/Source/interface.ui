@@ -19,6 +19,57 @@
   <property name="windowTitle">
    <string>Implicit Terrain</string>
   </property>
+  <!-- Set dark theme for the main window -->
+  <property name="styleSheet">
+   <string notr="true">
+    QMainWindow {
+        background-color: #2e2e2e;
+        color: #ffffff;
+    }
+    QWidget {
+        background-color: #2e2e2e;
+        color: #ffffff;
+    }
+    QPushButton {
+        background-color: #4d4d4d;
+        color: #ffffff;
+        border: 1px solid #3a3a3a;
+        padding: 5px;
+    }
+    QPushButton:hover {
+        background-color: #5e5e5e;
+    }
+    QGroupBox {
+        background-color: #2e2e2e;
+        color: #ffffff;
+        border: 1px solid #3a3a3a;
+        padding: 10px;
+        margin-top: 20px;
+    }
+    QLabel {
+        color: #ffffff;
+    }
+    QLineEdit {
+        background-color: #4d4d4d;
+        color: #ffffff;
+        border: 1px solid #3a3a3a;
+    }
+    QRadioButton, QCheckBox {
+        color: #ffffff;
+    }
+    QMenuBar {
+        background-color: #2e2e2e;
+        color: #ffffff;
+    }
+    QMenuBar::item {
+        background-color: #2e2e2e;
+        color: #ffffff;
+    }
+    QMenuBar::item:selected {
+        background-color: #5e5e5e;
+    }
+   </string>
+  </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QHBoxLayout">
     <property name="spacing">
@@ -56,80 +107,57 @@
       <property name="title">
        <string/>
       </property>
+      <!-- Buttons with dark theme -->
       <widget class="QPushButton" name="boxMesh">
        <property name="geometry">
         <rect>
          <x>20</x>
          <y>20</y>
-         <width>101</width>
-         <height>23</height>
+         <width>140</width>
+         <height>30</height>
         </rect>
-       </property>
-       <property name="toolTip">
-        <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
-&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
-p, li { white-space: pre-wrap; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'MS Shell Dlg 2'; font-size:8pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; color:#5500ff;&quot;&gt;Callback #01&lt;/span&gt;&lt;/p&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-style:italic; color:#aa00ff;&quot;&gt;Create Eurographics 1996 Bear&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
        </property>
        <property name="text">
         <string>Box Mesh</string>
        </property>
-       <property name="checkable">
-        <bool>false</bool>
+      </widget>
+      <widget class="QPushButton" name="triangulatedMesh">
+       <property name="geometry">
+        <rect>
+         <x>170</x>
+         <y>60</y>
+         <width>140</width>
+         <height>30</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Triangulated Mesh</string>
        </property>
       </widget>
       <widget class="QPushButton" name="resetcameraButton">
        <property name="geometry">
         <rect>
-         <x>140</x>
+         <x>170</x>
          <y>20</y>
-         <width>81</width>
-         <height>23</height>
+         <width>140</width>
+         <height>30</height>
         </rect>
-       </property>
-       <property name="toolTip">
-        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; color:#5500ff;&quot;&gt;Callback #03&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-style:italic; color:#aa00ff;&quot;&gt;Create Eurographics 1996 Bird&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
        </property>
        <property name="text">
         <string>Reset Camera</string>
-       </property>
-       <property name="checkable">
-        <bool>true</bool>
-       </property>
-       <property name="autoDefault">
-        <bool>false</bool>
-       </property>
-       <property name="default">
-        <bool>false</bool>
-       </property>
-       <property name="flat">
-        <bool>false</bool>
        </property>
       </widget>
       <widget class="QPushButton" name="sphereImplicit">
        <property name="geometry">
         <rect>
          <x>20</x>
-         <y>50</y>
-         <width>101</width>
-         <height>23</height>
+         <y>60</y>
+         <width>140</width>
+         <height>30</height>
         </rect>
-       </property>
-       <property name="toolTip">
-        <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
-&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
-p, li { white-space: pre-wrap; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'MS Shell Dlg 2'; font-size:8pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; color:#5500ff;&quot;&gt;Callback #01&lt;/span&gt;&lt;/p&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-style:italic; color:#aa00ff;&quot;&gt;Create Eurographics 1996 Bear&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
        </property>
        <property name="text">
         <string>Sphere Implicit</string>
-       </property>
-       <property name="checkable">
-        <bool>false</bool>
        </property>
       </widget>
      </widget>
@@ -166,6 +194,7 @@ p, li { white-space: pre-wrap; }
        <property name="title">
         <string> Statistics</string>
        </property>
+       <!-- Labels and line edits with dark theme -->
        <widget class="QLabel" name="label_2">
         <property name="geometry">
          <rect>
@@ -187,9 +216,6 @@ p, li { white-space: pre-wrap; }
           <width>81</width>
           <height>20</height>
          </rect>
-        </property>
-        <property name="alignment">
-         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
         </property>
        </widget>
        <widget class="QLabel" name="label_3">
@@ -214,12 +240,6 @@ p, li { white-space: pre-wrap; }
           <height>20</height>
          </rect>
         </property>
-        <property name="text">
-         <string/>
-        </property>
-        <property name="alignment">
-         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-        </property>
        </widget>
       </widget>
       <widget class="QGroupBox" name="groupBox_13">
@@ -234,6 +254,7 @@ p, li { white-space: pre-wrap; }
        <property name="title">
         <string>Shading</string>
        </property>
+       <!-- Radio buttons and checkboxes with dark theme -->
        <widget class="QRadioButton" name="radioShadingButton_1">
         <property name="geometry">
          <rect>
@@ -251,6 +272,9 @@ p, li { white-space: pre-wrap; }
         </property>
        </widget>
        <widget class="QCheckBox" name="wireframe">
+        <property name="checked">
+         <bool>true</bool>
+        </property>
         <property name="geometry">
          <rect>
           <x>90</x>
@@ -262,24 +286,18 @@ p, li { white-space: pre-wrap; }
         <property name="text">
          <string>Wireframe</string>
         </property>
-        <property name="checked">
-         <bool>true</bool>
-        </property>
        </widget>
        <widget class="QRadioButton" name="radioShadingButton_2">
         <property name="geometry">
          <rect>
           <x>20</x>
           <y>50</y>
-          <width>61</width>
+          <width>82</width>
           <height>20</height>
          </rect>
         </property>
         <property name="text">
-         <string>Color</string>
-        </property>
-        <property name="checked">
-         <bool>false</bool>
+         <string>Flat</string>
         </property>
        </widget>
       </widget>
@@ -287,70 +305,6 @@ p, li { white-space: pre-wrap; }
     </item>
    </layout>
   </widget>
-  <widget class="QMenuBar" name="menubar">
-   <property name="geometry">
-    <rect>
-     <x>0</x>
-     <y>0</y>
-     <width>1200</width>
-     <height>22</height>
-    </rect>
-   </property>
-   <widget class="QMenu" name="menuFile">
-    <property name="title">
-     <string>File</string>
-    </property>
-   </widget>
-   <addaction name="menuFile"/>
-  </widget>
-  <action name="actionExit">
-   <property name="text">
-    <string>Exit</string>
-   </property>
-   <property name="shortcut">
-    <string>Esc</string>
-   </property>
-  </action>
-  <action name="actionNew_Scene">
-   <property name="text">
-    <string>New Scene</string>
-   </property>
-  </action>
-  <action name="actionExport_obj">
-   <property name="text">
-    <string>OBJ File (.obj)</string>
-   </property>
-  </action>
-  <action name="actionExport_ma">
-   <property name="text">
-    <string>Maya File (.ma)</string>
-   </property>
-  </action>
-  <action name="actionLoad_ma">
-   <property name="text">
-    <string>Load</string>
-   </property>
-  </action>
-  <action name="actionGL">
-   <property name="text">
-    <string>GL</string>
-   </property>
-  </action>
-  <action name="actionVectorized">
-   <property name="text">
-    <string>Vectorized</string>
-   </property>
-  </action>
-  <action name="actionExport_svg">
-   <property name="text">
-    <string>SVG File (.svg)</string>
-   </property>
-  </action>
-  <action name="actionSphere_Tracing_png">
-   <property name="text">
-    <string>Sphere Tracing (.png)</string>
-   </property>
-  </action>
  </widget>
  <resources/>
  <connections/>

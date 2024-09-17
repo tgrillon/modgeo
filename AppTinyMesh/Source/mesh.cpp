@@ -247,12 +247,14 @@ void Mesh::Load(const QString& filename)
 
   if (!data.open(QFile::ReadOnly))
     return;
+
   QTextStream in(&data);
 
   // Set of regular expressions : Vertex, Normal, Triangle
   QRegularExpression rexv("v\\s*([-|+|\\s]\\d*\\.\\d+)\\s*([-|+|\\s]\\d*\\.\\d+)\\s*([-|+|\\s]\\d*\\.\\d+)");
   QRegularExpression rexn("vn\\s*([-|+|\\s]\\d*\\.\\d+)\\s*([-|+|\\s]\\d*\\.\\d+)\\s*([-|+|\\s]\\d*\\.\\d+)");
-  QRegularExpression rext("f\\s*(\\d*)/\\d*/(\\d*)\\s*(\\d*)/\\d*/(\\d*)\\s*(\\d*)/\\d*/(\\d*)");
+  // QRegularExpression rext("f\\s*(\\d*)/\\d*/(\\d*)\\s*(\\d*)/\\d*/(\\d*)\\s*(\\d*)/\\d*/(\\d*)");
+  QRegularExpression rext("f\\s*(\\d*)\\s*(\\d*)\\s*(\\d*)");
   while (!in.atEnd())
   {
     QString line = in.readLine();
@@ -270,11 +272,11 @@ void Mesh::Load(const QString& filename)
     else if (matchT.hasMatch())//rext.indexIn(line, 0) > -1)
     {
       varray.push_back(matchT.captured(1).toInt() - 1);
+      varray.push_back(matchT.captured(2).toInt() - 1);
       varray.push_back(matchT.captured(3).toInt() - 1);
-      varray.push_back(matchT.captured(5).toInt() - 1);
-      narray.push_back(matchT.captured(2).toInt() - 1);
-      narray.push_back(matchT.captured(4).toInt() - 1);
-      narray.push_back(matchT.captured(6).toInt() - 1);
+      // narray.push_back(matchT.captured(2).toInt() - 1);
+      // narray.push_back(matchT.captured(4).toInt() - 1);
+      // narray.push_back(matchT.captured(6).toInt() - 1);
     }
   }
   data.close();
