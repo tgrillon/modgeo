@@ -65,6 +65,12 @@ int Application::init()
   m_objet.bounds(pmin, pmax);
   camera().lookat(pmin, pmax);
 
+  // Setup Dear ImGui context
+  IMGUI_CHECKVERSION();
+  ImGui::CreateContext();
+  ImGuiIO& io{ImGui::GetIO()}; (void)io;
+
+
   glClearColor(0.2f, 0.2f, 0.2f, 1.f);        // couleur par defaut de la fenetre
   
   glClearDepth(1.f);                          // profondeur par defaut
