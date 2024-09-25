@@ -49,10 +49,17 @@ Application::Application()  : AppCamera(1024, 640)
 
 int Application::init()
 {
-  std::string objPath= std::string(OBJ_DIR) + "/cube.obj";
-  m_objet= read_mesh(objPath);
+  // std::string objPath= std::string(OBJ_DIR) + "/cube.obj";
+  // m_objet= read_mesh(objPath);
 
-  m_repere= make_grid();
+  // m_repere= make_grid();
+
+  m_bezier= mg::Bezier::Create(10, 10);
+
+  // Point p= {0, 30, 0};
+  // m_bezier.SetControlPoint(5, 5, p);
+
+  m_objet= m_bezier.Poligonize(100);
 
   Point pmin, pmax; 
   m_objet.bounds(pmin, pmax);
@@ -64,7 +71,7 @@ int Application::init()
   glDepthFunc(GL_LESS);                       // ztest, conserver l'intersection la plus proche de la camera
   glEnable(GL_DEPTH_TEST);                    // activer le ztest
 
- return 0;   // pas d'erreur, sinon renvoyer -1
+  return 0;   // pas d'erreur, sinon renvoyer -1
 }
  
 int Application::quit()
@@ -78,8 +85,15 @@ int Application::render()
 {
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+  m_deltaTime= global_time() - m_deltaTime;
+  m_bezier= mg::Bezier::Create(10, 10);
+  Point p= {0, (sin(global_time() * 0.002) / (global_time() * 0.002)) * 100, 0};
+  m_bezier.SetControlPoint(5, 5, p);
+
+  m_objet= m_bezier.Poligonize(50);
+
   draw(m_objet, Identity(), camera());  
-  draw(m_repere, Identity(), camera());  
+  // draw(m_repere, Identity(), camera());  
 
   return 1;
 }

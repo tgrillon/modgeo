@@ -8,6 +8,8 @@
 #include "app_camera.h"        // classe Application a deriver
 #include "uniforms.h"
 
+#include "Bezier.h"
+
 class Application : public AppCamera
 {
 public:
@@ -23,5 +25,9 @@ protected:
   Mesh m_robot;
   Mesh m_repere;
 
+  mg::Bezier m_bezier; 
+
+  double m_deltaTime= 0.0; 
+  
   unsigned int m_program;
 };

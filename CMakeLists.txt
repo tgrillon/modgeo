@@ -25,6 +25,7 @@ set(IMGUI_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/vendor/imgui/Include")
 set(IMGUI_SOURCE_DIR "${CMAKE_SOURCE_DIR}/vendor/imgui/Source")
 add_executable(${PROJECT_NAME} ${SOURCE_DIR}/main.cpp 
                                ${SOURCE_DIR}/Bezier.cpp
+                               ${SOURCE_DIR}/Implicit.cpp
                                ${SOURCE_DIR}/Application.cpp)
 
 target_link_libraries(${PROJECT_NAME} gkit)
