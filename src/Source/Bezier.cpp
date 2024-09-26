@@ -2,14 +2,14 @@
 
 namespace mg
 {
-Bezier::Bezier() : m_controlPoints()
+Bezier::Bezier() : m_control_points()
 {
 }
 
 void Bezier::SetControlPoint(int r, int c, const Point &point)
 {
-  assert(r * m_patchWidth + c < m_controlPoints.size());
-  m_controlPoints[r * m_patchWidth + c]= point;
+  assert(r * m_patch_width + c < m_control_points.size());
+  m_control_points[r * m_patch_width + c]= point;
 }
 
 Mesh Bezier::Poligonize(int n) const
@@ -34,10 +34,10 @@ Mesh Bezier::Poligonize(int n) const
   { 
     for (int j= 0; j < n - 1; ++j)
     {
-      int nextI= i + 1;
-      int nextJ= j + 1;
-      mesh.triangle(i * n + j, nextI * n + j, nextI * n + nextJ);
-      mesh.triangle(i * n + j, nextI * n + nextJ, i * n + nextJ);
+      int next_i= i + 1;
+      int next_j= j + 1;
+      mesh.triangle(i * n + j, next_i * n + j, next_i * n + next_j);
+      mesh.triangle(i * n + j, next_i * n + next_j, i * n + next_j);
     }
   }
 
@@ -51,12 +51,12 @@ Bezier Bezier::Create(int n, int m)
   std::uniform_real_distribution<float> dist(-0, 10); 
 
   Bezier bz; 
-  bz.m_patchWidth= n; 
-  bz.m_patchHeight= m;
+  bz.m_patch_width= n; 
+  bz.m_patch_height= m;
   for (int i= 0; i < n; ++i)
     for (int j= 0; j < m; ++j)
     {
-      bz.m_controlPoints.emplace_back(i, 0, j);
+      bz.m_control_points.emplace_back(i, 0, j);
     }
 
   return bz; 
@@ -69,12 +69,12 @@ Bezier Bezier::Create(int n, int m, double dt)
   std::uniform_real_distribution<float> dist(-0, 10); 
 
   Bezier bz; 
-  bz.m_patchWidth= n; 
-  bz.m_patchHeight= m;
+  bz.m_patch_width= n; 
+  bz.m_patch_height= m;
   for (int i= 0; i < n; ++i)
     for (int j= 0; j < m; ++j)
     {
-      bz.m_controlPoints.emplace_back(i, sin(dt + i) / (dt + i), j);
+      bz.m_control_points.emplace_back(i, sin(dt + i) / (dt + i), j);
     }
 
   return bz; 
@@ -83,11 +83,11 @@ Bezier Bezier::Create(int n, int m, double dt)
 Point Bezier::GetPoint(double u, double v) const
 {
   Point p; 
-  for (int r= 0; r < m_patchHeight; ++r)
+  for (int r= 0; r < m_patch_height; ++r)
   {
-    for (int c= 0; c < m_patchWidth; ++c)
+    for (int c= 0; c < m_patch_width; ++c)
     {
-      p= p + Bernstein(u, c, m_patchWidth-1) * Bernstein(v, r, m_patchHeight-1) * m_controlPoints[r * m_patchWidth + c]; 
+      p= p + Bernstein(u, c, m_patch_width-1) * Bernstein(v, r, m_patch_height-1) * m_control_points[r * m_patch_width + c]; 
     }
   }
 
@@ -96,7 +96,7 @@ Point Bezier::GetPoint(double u, double v) const
 
 double Bezier::Bernstein(double u, int i, int m) const
 {
-  return bCoeffs[m][i] * pow(u, i) * pow(1 - u, m - i);
+  return binomal_coeffs[m][i] * pow(u, i) * pow(1 - u, m - i);
 }
 
 } // namespace mg

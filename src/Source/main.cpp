@@ -1,7 +1,7 @@
-#include "Application.h"
+#include "Viewer.h"
 
 int main()
 {
-  Application app; 
-  app.run();
+  Viewer viewer; 
+  viewer.run();
 }

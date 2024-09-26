@@ -28,13 +28,14 @@ set(IMGUI_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/vendor/imgui/Include")
 add_library(imgui STATIC ${IMGUI_SOURCE_DIR}/imgui_demo.cpp
                          ${IMGUI_SOURCE_DIR}/imgui_draw.cpp                                               
                          ${IMGUI_SOURCE_DIR}/imgui_impl_sdl2.cpp                         
-                         ${IMGUI_SOURCE_DIR}/imgui_impl_sdlrenderer2.cpp                         
+                         ${IMGUI_SOURCE_DIR}/imgui_impl_opengl3.cpp                         
                          ${IMGUI_SOURCE_DIR}/imgui_tables.cpp                         
                          ${IMGUI_SOURCE_DIR}/imgui_widgets.cpp                         
                          ${IMGUI_SOURCE_DIR}/imgui.cpp
                          ${IMGUI_INCLUDE_DIR}/imconfig.h                         
                          ${IMGUI_INCLUDE_DIR}/imgui_impl_sdl2.h                         
-                         ${IMGUI_INCLUDE_DIR}/imgui_impl_sdlrenderer2.h                         
+                         ${IMGUI_INCLUDE_DIR}/imgui_impl_opengl3.h                         
+                         ${IMGUI_INCLUDE_DIR}/imgui_impl_opengl3_loader.h                         
                          ${IMGUI_INCLUDE_DIR}/imgui_internal.h                         
                          ${IMGUI_INCLUDE_DIR}/imgui.h                         
                          ${IMGUI_INCLUDE_DIR}/imstb_rectpack.h                         
@@ -49,11 +50,13 @@ set(INCLUDE_DIR "${CMAKE_SOURCE_DIR}/src/Include")
 add_executable(${PROJECT_NAME} ${SOURCE_DIR}/main.cpp 
                                ${SOURCE_DIR}/Bezier.cpp
                                ${SOURCE_DIR}/Implicit.cpp
-                               ${SOURCE_DIR}/Application.cpp
                                ${SOURCE_DIR}/Window.cpp
+                               ${SOURCE_DIR}/App.cpp
+                               ${SOURCE_DIR}/Viewer.cpp
                                ${INCLUDE_DIR}/Bezier.h
-                               ${INCLUDE_DIR}/Application.h
                                ${INCLUDE_DIR}/Window.h
+                               ${INCLUDE_DIR}/App.h
+                               ${INCLUDE_DIR}/Viewer.h
                                ${INCLUDE_DIR}/Implicit.h)
 
 target_link_libraries(${PROJECT_NAME} gkit

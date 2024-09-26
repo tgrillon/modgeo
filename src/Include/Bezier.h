@@ -11,7 +11,7 @@
 namespace mg 
 {
 
-const std::vector<std::vector<int>> bCoeffs = {
+const std::vector<std::vector<int>> binomal_coeffs = {
   {1},
   {1, 1},
   {1, 2, 1},
@@ -64,8 +64,8 @@ private:
   double Bernstein(double u, int i, int m) const;
 
 private:
-  std::vector<Point> m_controlPoints;
+  std::vector<Point> m_control_points;
 
-  int m_patchWidth, m_patchHeight; 
+  int m_patch_width, m_patch_height; 
 };
 } // namespace mg
