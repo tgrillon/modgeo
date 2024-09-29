@@ -50,16 +50,18 @@ int Viewer::init_any()
 
   m_grid= make_grid(10);
 
-  m_bezier= mg::Bezier::Create(10, 10);
+  std::string heightmapPath= std::string(MAP_DIR) + "/heightmap4.png";
+  m_hm= mg::Grid::load(heightmapPath);
+  m_bezier= mg::Bezier::create(m_hm);
+
+  m_patch= m_bezier.poligonize(10);
 
   // Point p= {0, 30, 0};
-  // m_bezier.SetControlPoint(5, 5, p);
+  // m_bezier.control_point(5, 5, p);
 
-  m_patch= m_bezier.Poligonize(100);
-
-  Point pmin, pmax; 
-  m_patch.bounds(pmin, pmax);
-  m_camera.lookat(pmin, pmax);
+  // Point pmin, pmax; 
+  // m_patch->bounds(pmin, pmax);
+  // m_camera.lookat(pmin, pmax);
 
   return 0;
 }
@@ -85,11 +87,11 @@ int Viewer::render()
   /********************************/
   /**********RENDER HERE***********/
 
-  m_bezier= mg::Bezier::Create(10, 10);
-  Point p= {0, (sin(global_time() * 0.002f) * 100), 0};
-  m_bezier.SetControlPoint(5, 5, p);
+  // m_bezier= mg::Bezier::create(5, 5);
+  // Point p= {0, (sin(global_time() * 0.002f) * 100), 0};
+  // m_bezier.control_point(5, 5, p);
 
-  m_patch= m_bezier.Poligonize(m_resolution);
+  // m_patch= m_bezier.poligonize(m_resolution);
 
   draw(m_patch, Identity(), m_camera);  
 

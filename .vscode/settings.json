@@ -75,5 +75,6 @@
     "typeindex": "cpp",
     "typeinfo": "cpp",
     "variant": "cpp"
-  }
+  },
+  "cmake.configureSettings": {"GKIT_DIR": "/home/friska/dev/cxx/gkit2light"}
 }

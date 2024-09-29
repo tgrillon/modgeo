@@ -3,6 +3,7 @@
 #include <vector>
 #include <cmath>
 #include <random> 
+#include <memory> 
 
 #include "mesh.h"
 #include "vec.h"
@@ -46,26 +47,76 @@ const std::vector<std::vector<int>> binomal_coeffs = {
   {1, 31, 465, 4495, 31465, 169911, 736281, 2629575, 7888725, 20160075, 44352165, 84672315, 141120525, 206253075, 265182525, 300540195, 300540195, 265182525, 206253075, 141120525, 84672315, 44352165, 20160075, 7888725, 2629575, 736281, 169911, 31465, 4495, 465, 31, 1}
 };
 
+// class Curve; 
+// Point first_derivative(const Curve& p, double t, double e= 0.0001)
+// {
+//   return (p(t + e) - p(t - e)) / (2 * e);
+// }
+
+// Point second_derivative(const Curve& p, double t, double e= 0.0001)
+// {
+//   return (p(t + e) - 2 * p(t) + p(t - e)) / (e * e);
+// }
+
+// class Curve
+// {
+// public: 
+//   inline Vector tangente(double t) const { return normalize(Vector(first_derivative(*this, t))); } 
+//   inline Vector normal(double t) const { return normalize(Vector(second_derivative(*this, t))); } 
+//   inline Vector binormal(double t) const { return normalize(cross(tangente(t), normal(t))); } 
+
+//   Point operator()(double t) const;
+// protected: 
+
+// };
+
+
+class Grid
+{
+public: 
+  Grid()=default; 
+  ~Grid()=default; 
+
+  //! Create an n*m flat grid. 
+  static Grid create(unsigned int n, unsigned int m);
+  //! Load the grid corresponding to the provided height map. 
+  static Grid load(const std::string& height_map, float scale= 100.0);
+
+  void operator()(unsigned int x, unsigned int y, const Point& value); 
+  const Point& operator[](size_t i) { return m_points[i]; } 
+  const Point& at(size_t i) const { return m_points.at(i); } 
+  void operator=(const std::vector<Point>& points) { m_points= points; } 
+
+  inline size_t width() const { return m_width; }
+  inline size_t height() const { return m_height; }
+
+private: 
+  std::vector<Point> m_points{}; 
+
+  unsigned int m_width{0}, m_height{0};
+};
+
 class Bezier
 {
 public:
   Bezier();
 
-  void SetControlPoint(int r, int c, const Point& point);
-
-  Mesh Poligonize(int resolution) const; 
+  Mesh poligonize(int resolution) const; 
   
-  static Bezier Create(int n, int m);
-  static Bezier Create(int n, int m, double dt);
+  static Bezier create(const Grid& grid);
+
+  Grid& control_point() { return m_control_points; }
+
+  inline size_t width() const { return m_control_points.width(); }
+  inline size_t height() const { return m_control_points.height(); }
+
 private: 
 
-  Point GetPoint(double u, double v) const;
+  Point point(double u, double v) const;
 
-  double Bernstein(double u, int i, int m) const;
+  double bernstein(double u, int i, int m) const;
 
 private:
-  std::vector<Point> m_control_points;
-
-  int m_patch_width, m_patch_height; 
+  Grid m_control_points; 
 };
 } // namespace mg

@@ -26,6 +26,7 @@ private:
   Mesh m_patch;
 
   mg::Bezier m_bezier;
+  mg::Grid m_hm;
 
   Framebuffer m_framebuffer; 
 
