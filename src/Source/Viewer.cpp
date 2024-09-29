@@ -1,5 +1,6 @@
 #include "Viewer.h"
 
+
 Mesh make_grid(const int n= 10)
 {
   Mesh grid= Mesh(GL_LINES);
@@ -39,17 +40,12 @@ Mesh make_grid(const int n= 10)
 }
 
 
-Viewer::Viewer() : App(1024, 640)
+Viewer::Viewer() : App(1024, 640), m_framebuffer(window_width(), window_height())
 {
 }
 
-int Viewer::init()
+int Viewer::init_any()
 {
-  if (init_imgui() < 0) return -1;
-
-  /********************************/
-  /************INIT HERE***********/
-
   m_camera.projection(window_width(), window_height(), 45);
 
   m_grid= make_grid(10);
@@ -65,25 +61,32 @@ int Viewer::init()
   m_patch.bounds(pmin, pmax);
   m_camera.lookat(pmin, pmax);
 
-  /********************************/
-  /********************************/
-
-  if (init_sdl_gl() < 0) return -1;
-
   return 0;
 }
+
 
 int Viewer::render()
 {
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+  // Start the Dear ImGui frame
+  ImGui_ImplOpenGL3_NewFrame();
+  ImGui_ImplSDL2_NewFrame();
+  ImGui::NewFrame();
+
   render_ui();
 
+  m_framebuffer.bind();
+  glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // we're not using the stencil buffer now
+  glEnable(GL_DEPTH_TEST);
+
+  // render_ui();
   /********************************/
   /**********RENDER HERE***********/
 
   m_bezier= mg::Bezier::Create(10, 10);
-  Point p= {0, (sin(global_time() * 0.002) * 100), 0};
+  Point p= {0, (sin(global_time() * 0.002f) * 100), 0};
   m_bezier.SetControlPoint(5, 5, p);
 
   m_patch= m_bezier.Poligonize(m_resolution);
@@ -93,97 +96,103 @@ int Viewer::render()
   /********************************/
   /********************************/
 
+  m_framebuffer.unbind();
+
+  ImGuiIO& io = ImGui::GetIO(); (void)io;
+
+  ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+  // Update and Render additional Platform Windows
+  // (Platform functions may change the current OpenGL context, so we save/restore it to make it easier to paste this code elsewhere.
+  if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+  {
+    SDL_Window* backup_current_window = SDL_GL_GetCurrentWindow();
+    SDL_GLContext backup_current_context = SDL_GL_GetCurrentContext();
+    ImGui::UpdatePlatformWindows();
+    ImGui::RenderPlatformWindowsDefault();
+    SDL_GL_MakeCurrent(backup_current_window, backup_current_context);
+  }
+
   return 1;
 }
 
-int Viewer::quit()
+int Viewer::quit_any()
 {
   m_grid.release();
   m_patch.release();
-
-  // Cleanup
-  ImGui_ImplOpenGL3_Shutdown();
-  ImGui_ImplSDL2_Shutdown();
-  ImGui::DestroyContext();
-  SDL_Quit();
-
-  return 0;
-}
-
-int Viewer::init_sdl_gl()
-{
-  glClearColor(0.2f, 0.2f, 0.2f, 1.f);        // couleur par defaut de la fenetre
-  
-  glClearDepth(1.f);                          // profondeur par defaut
-  glDepthFunc(GL_LESS);                       // ztest, conserver l'intersection la plus proche de la camera
-  glEnable(GL_DEPTH_TEST);                    // activer le ztest
-
-  return 0;
-}
-
-int Viewer::init_imgui()
-{
-  // Setup Dear ImGui context
-  IMGUI_CHECKVERSION();
-  ImGui::CreateContext();
-  io= ImGui::GetIO(); (void)io;
-
-  io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-  io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
-  // Enable docking
-  io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-
-  // Setup Platform/Renderer bindings
-  // window is the SDL_Window*
-  // context is the SDL_GLContext
-  ImGui_ImplSDL2_InitForOpenGL(m_window, m_context);
-  ImGui_ImplOpenGL3_Init();
-
-  // Setup Dear ImGui style
-  ImGui::StyleColorsDark();
 
   return 0;
 }
 
 void Viewer::render_ui()
 {
-  // Start the Dear ImGui frame
-  ImGui_ImplOpenGL3_NewFrame();
-  ImGui_ImplSDL2_NewFrame();
-  ImGui::NewFrame();
-
-  // This is all that needs to be added for this:
   ImGui::DockSpaceOverViewport();
 
-  init_control_panel();
+  init_menu_bar();
+
+  ImGui::Begin("Scene");
+
+  if (ImGui::IsWindowHovered())
+  {
+    ImGuiIO& io= ImGui::GetIO(); (void)io;
+
+    io.WantCaptureMouse= false; 
+  }
+
+  // we access the ImGui window size
+  const float window_width = ImGui::GetContentRegionAvail().x;
+  const float window_height = ImGui::GetContentRegionAvail().y;
+
+  // we rescale the framebuffer to the actual window size here and reset the glViewport 
+  m_framebuffer.rescale(window_width, window_height);
+
+  // we get the screen position of the window
+  ImVec2 pos = ImGui::GetCursorScreenPos();
+
+  ImGui::GetWindowDrawList()->AddImage(
+    (void *)m_framebuffer.texture_id(), 
+    ImVec2(pos.x, pos.y), 
+    ImVec2(pos.x + window_width, pos.y + window_height), 
+    ImVec2(0, 1), 
+    ImVec2(1, 0)
+  );
+
+  ImGui::End();
 
   if (m_show_ui)
   {
-    ImGui::Begin("Control Panel", &m_show_ui);
+    ImGui::Begin("Parameters");
     ImGui::SliderInt("Resolution", &m_resolution, 3, 150);
+    ImGui::End();
+
+    ImGui::Begin("Statistiques");
+    ImGui::Text("Frame rate : %.2f ms", delta_time());
+    ImGui::Text("FPS : %.2f ", (1000.f / delta_time()));
     ImGui::End();
   }
 
-  // Rendering
+  if (m_show_style_editor)
+  {
+    ImGui::Begin("Dear ImGui Style Editor", &m_show_style_editor);
+    ImGui::ShowStyleEditor();
+    ImGui::End();
+  }
+
+
   ImGui::Render();
-  ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
-void Viewer::init_control_panel()
+void Viewer::init_menu_bar()
 {
   ImGui::DockSpace(ImGui::GetID("DockSpace"));
 
-  if (ImGui::BeginMainMenuBar()) {
-    if (ImGui::BeginMenu("File")) {
-      if (ImGui::MenuItem("Exit")) {
-        m_exit= true;
-      }
-      ImGui::EndMenu();
-    }
-    if (ImGui::BeginMenu("View")) {
-      ImGui::MenuItem(
-        "Control Panel", nullptr, &m_show_ui
-      );
+  if (ImGui::BeginMainMenuBar()) 
+  {
+    if (ImGui::BeginMenu("Edit")) 
+    {
+      ImGui::MenuItem("Style Editor", NULL, &m_show_style_editor);
+      ImGui::MenuItem("Control Panel", NULL, &m_show_ui);
+      ImGui::MenuItem("Exit", NULL, &m_exit);
       ImGui::EndMenu();
     }
 

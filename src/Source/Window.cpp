@@ -148,12 +148,12 @@ int run( Window window, int (*draw)() )
   // run
   while(events(window))
   {
-      // dessiner
-      if(draw() < 1)
-          stop= 1;    // fermer l'application si draw() renvoie 0 ou -1...
-      
-      // presenter le resultat
-      SDL_GL_SwapWindow(window);
+    // dessiner
+    if(draw() < 1)
+        stop= 1;    // fermer l'application si draw() renvoie 0 ou -1...
+    
+    // presenter le resultat
+    SDL_GL_SwapWindow(window);
   }
 
   return 0;
@@ -173,12 +173,12 @@ int events( Window window )
   {
     // Forward to Imgui
     ImGui_ImplSDL2_ProcessEvent(&event);
-    // if (event.type == SDL_QUIT
-    //     || (event.type == SDL_WINDOWEVENT
-    //     && event.window.event == SDL_WINDOWEVENT_CLOSE
-    //     && event.window.windowID == SDL_GetWindowID(window))) {
-    //     stop= 1;
-    // }
+    if (event.type == SDL_QUIT
+        || (event.type == SDL_WINDOWEVENT
+        && event.window.event == SDL_WINDOWEVENT_CLOSE
+        && event.window.windowID == SDL_GetWindowID(window))) {
+        stop= 1;
+    }
 
     switch(event.type)
     {

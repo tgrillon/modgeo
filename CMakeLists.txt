@@ -49,13 +49,15 @@ set(SOURCE_DIR "${CMAKE_SOURCE_DIR}/src/Source")
 set(INCLUDE_DIR "${CMAKE_SOURCE_DIR}/src/Include")
 add_executable(${PROJECT_NAME} ${SOURCE_DIR}/main.cpp 
                                ${SOURCE_DIR}/Bezier.cpp
-                               ${SOURCE_DIR}/Implicit.cpp
                                ${SOURCE_DIR}/Window.cpp
                                ${SOURCE_DIR}/App.cpp
+                               ${SOURCE_DIR}/Framebuffer.cpp
                                ${SOURCE_DIR}/Viewer.cpp
+                               ${SOURCE_DIR}/Implicit.cpp
                                ${INCLUDE_DIR}/Bezier.h
                                ${INCLUDE_DIR}/Window.h
                                ${INCLUDE_DIR}/App.h
+                               ${INCLUDE_DIR}/Framebuffer.h
                                ${INCLUDE_DIR}/Viewer.h
                                ${INCLUDE_DIR}/Implicit.h)
 

@@ -4,6 +4,7 @@
 #include "draw.h"
 #include "mesh.h"
 
+#include "Framebuffer.h"
 #include "Bezier.h"
 
 class Viewer : public App
@@ -11,17 +12,14 @@ class Viewer : public App
 public:
   Viewer();
 
-  int init();
-  int quit();
+  int init_any();
+  int quit_any();
 
   int render();
 
 private:
-  int init_sdl_gl();
-  int init_imgui();
-
   void render_ui();
-  void init_control_panel(); 
+  void init_menu_bar(); 
 
 private: 
   Mesh m_grid;
@@ -29,7 +27,9 @@ private:
 
   mg::Bezier m_bezier;
 
-  int m_resolution{10}; 
+  Framebuffer m_framebuffer; 
 
-  ImGuiIO io;
+  bool m_show_style_editor{false};
+
+  int m_resolution{10}; 
 };

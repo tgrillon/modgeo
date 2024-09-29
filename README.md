@@ -35,4 +35,3 @@ Optionally, you can use your own code (without Qt) to do the windowing and rende
  - mesh.h/.cpp (*You must remove the Mesh::LoadObj and Mesh::SaveObj functions, which depends on Qt*)
  - meshcolor.h/.cpp
  - ray.h/.cpp
-

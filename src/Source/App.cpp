@@ -20,11 +20,10 @@ int App::prerender()
   int mousex, mousey;
   SDL_GetMouseState(&mousex, &mousey);
   
-  // bool ctrlKey = key_state(SDLK_LCTRL) || key_state(SDLK_RCTRL);
-  // auto& io = ImGui::GetIO();
+  ImGuiIO& io = ImGui::GetIO(); (void)io;
 
-  // if (!ctrlKey && !io.WantCaptureMouse && !io.WantCaptureKeyboard) 
-  // {
+  if (!io.WantCaptureMouse) 
+  {
     // deplace la camera
     if(mb & SDL_BUTTON(1))
       m_camera.rotation(mx, my);      // tourne autour de l'objet
@@ -39,7 +38,7 @@ int App::prerender()
       clear_wheel_event();
       m_camera.move(8.f * wheel.y);  // approche / eloigne l'objet
     }
-  // }
+  }
 
   const char *orbiter_filename= "app_orbiter.txt";
   // copy / export / write orbiter
@@ -80,7 +79,7 @@ int App::run()
   
   glViewport(0, 0, window_width(), window_height());
   
-  while(events(m_window))
+  while(events(m_window) && !m_exit)
   {
     if(prerender() < 0)
       break;
@@ -128,3 +127,79 @@ void App::vsync_off()
   sync= false;
 }
 
+int App::init()
+{
+  if (init_imgui() < 0) return -1;
+  if (init_any() < 0) return -1;
+  if (init_gl() < 0) return -1;
+
+  return 0;
+}
+
+int App::init_imgui()
+{
+  // Setup Dear ImGui context
+  IMGUI_CHECKVERSION();
+  ImGui::CreateContext();
+  ImGuiIO& io = ImGui::GetIO(); (void)io;
+  io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+  io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking
+  io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+
+  // Setup Dear ImGui style
+  ImGui::StyleColorsDark();
+
+  // When viewports are enabled we tweak WindowRounding/WindowBg so platform windows can look identical to regular ones.
+  ImGuiStyle& style = ImGui::GetStyle();
+  if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+  {
+    style.WindowRounding = 0.0f;
+    style.Colors[ImGuiCol_WindowBg].w = 1.0f;
+  }
+
+  // Setup Platform/Renderer backends
+  ImGui_ImplSDL2_InitForOpenGL(m_window, m_context);
+  ImGui_ImplOpenGL3_Init("#version 330");
+
+  return 0;
+}
+
+int App::init_gl()
+{
+  glClearColor(0.2f, 0.2f, 0.2f, 1.f);      
+  
+  glClearDepth(1.f);                        
+  glDepthFunc(GL_LESS);                     
+  glEnable(GL_DEPTH_TEST);                  
+
+  return 0;
+}
+
+int App::quit()
+{
+  if (quit_any() < 0) return -1;
+  if (quit_imgui() < 0) return -1;
+  if (quit_sdl() < 0) return -1;
+
+  return 0;
+}
+
+int App::quit_sdl()
+{
+  // Cleanup SDL
+  SDL_GL_DeleteContext(m_context);
+  SDL_DestroyWindow(m_window);
+  SDL_Quit();
+
+  return 0;
+}
+
+int App::quit_imgui()
+{
+  // Cleanup ImGui
+  ImGui_ImplOpenGL3_Shutdown();
+  ImGui_ImplSDL2_Shutdown();
+  ImGui::DestroyContext();
+
+  return 0;
+}

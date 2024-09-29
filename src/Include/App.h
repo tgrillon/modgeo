@@ -15,11 +15,17 @@
 class App
 {
 public:
-  App(const int width, const int height, const int major= 3, const int minor= 3, const int samples= 0);
+  App(const int width, const int height, const int major= 3, const int minor= 3, const int samples= 1);
   virtual ~App();
 
-  virtual int init()=0;
-  virtual int quit()=0;
+  virtual int init();
+  virtual int init_any()=0;
+  virtual int init_imgui();
+  virtual int init_gl();
+  virtual int quit();
+  virtual int quit_any()=0;
+  virtual int quit_imgui();
+  virtual int quit_sdl();
 
   virtual int update(const float time, const float delta) { return 0; }
   virtual int render()=0;
@@ -45,4 +51,6 @@ protected:
   Context m_context;
 
   Orbiter m_camera;
+
+  ImGuiIO io; 
 };
