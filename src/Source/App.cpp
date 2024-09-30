@@ -99,6 +99,13 @@ int App::prerender()
     clear_key_state('s');
     screenshot("app", calls++);
   }
+
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+  // Start the Dear ImGui frame
+  ImGui_ImplOpenGL3_NewFrame();
+  ImGui_ImplSDL2_NewFrame();
+  ImGui::NewFrame();
   
   // appelle la fonction update() de la classe derivee
   return update(global_time(), delta_time());
@@ -106,6 +113,21 @@ int App::prerender()
 
 int App::postrender()
 {
+  ImGuiIO& io = ImGui::GetIO(); (void)io;
+
+  ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+  // Update and Render additional Platform Windows
+  // (Platform functions may change the current OpenGL context, so we save/restore it to make it easier to paste this code elsewhere.
+  if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+  {
+    SDL_Window* backup_current_window = SDL_GL_GetCurrentWindow();
+    SDL_GLContext backup_current_context = SDL_GL_GetCurrentContext();
+    ImGui::UpdatePlatformWindows();
+    ImGui::RenderPlatformWindowsDefault();
+    SDL_GL_MakeCurrent(backup_current_window, backup_current_context);
+  }
+
   m_cpu_stop= std::chrono::high_resolution_clock::now();
   m_cpu_time= std::chrono::duration_cast<std::chrono::microseconds>(m_cpu_stop - m_cpu_start).count(); 
   
@@ -196,7 +218,7 @@ int App::init_imgui()
   io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 
   // Setup Dear ImGui style
-  ImGui::StyleColorsClassic();
+  // ImGui::StyleColorsClassic();
 
   // When viewports are enabled we tweak WindowRounding/WindowBg so platform windows can look identical to regular ones.
   ImGuiStyle& style = ImGui::GetStyle();

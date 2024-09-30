@@ -92,7 +92,7 @@ public:
   inline size_t width() const { return m_width; }
   inline size_t height() const { return m_height; }
 
-  friend std::vector<Grid>* load(const std::string& height_map, unsigned int max_grid_width= 10, unsigned int max_grid_height= 10, float scale= 100.0);
+  friend std::vector<Grid>* load(const std::string& height_map, unsigned int max_grid_width, unsigned int max_grid_height, float scale);
 
 private: 
   mutable std::vector<Point> m_points{}; 

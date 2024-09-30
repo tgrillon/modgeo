@@ -70,13 +70,6 @@ int Viewer::init_any()
 
 int Viewer::render()
 {
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-  // Start the Dear ImGui frame
-  ImGui_ImplOpenGL3_NewFrame();
-  ImGui_ImplSDL2_NewFrame();
-  ImGui::NewFrame();
-
   if (render_ui() < 0)
   {
     utils::error("Error with the UI rendering!");
@@ -95,21 +88,6 @@ int Viewer::render()
   }
 
   m_framebuffer.unbind();
-
-  ImGuiIO& io = ImGui::GetIO(); (void)io;
-
-  ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
-  // Update and Render additional Platform Windows
-  // (Platform functions may change the current OpenGL context, so we save/restore it to make it easier to paste this code elsewhere.
-  if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-  {
-    SDL_Window* backup_current_window = SDL_GL_GetCurrentWindow();
-    SDL_GLContext backup_current_context = SDL_GL_GetCurrentContext();
-    ImGui::UpdatePlatformWindows();
-    ImGui::RenderPlatformWindowsDefault();
-    SDL_GL_MakeCurrent(backup_current_window, backup_current_context);
-  }
 
   return 1;
 }
@@ -239,7 +217,7 @@ int Viewer::render_menu_bar()
     ImGui::EndMainMenuBar();
   }
 
-  ImGui::ShowDemoWindow();
+  // ImGui::ShowDemoWindow();
 
   return 0;
 }

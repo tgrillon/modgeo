@@ -17,14 +17,12 @@ set(MAP_DIR "${DATA_DIR}/map" CACHE PATH "Path to the map directory.")
 message(STATUS "Map directory set to: ${MAP_DIR}")
 
 # Fetching gkit library 
-message(STATUS "Fetching GKit...")
 file(GLOB gkit_files "${GKIT_DIR}/src/gKit/*.cpp")
 add_library(gkit STATIC ${gkit_files})
-target_include_directories(gkit PUBLIC ${GKIT_DIR}/src/gKit)
+target_include_directories(gkit PUBLIC "${GKIT_DIR}/src/gKit")
 target_link_libraries(gkit PUBLIC GL GLEW SDL2 SDL2_image)
 
 # Fetching imgui library 
-message(STATUS "Fetching ImGui...")
 set(IMGUI_SOURCE_DIR "${CMAKE_SOURCE_DIR}/vendor/imgui/Source")
 set(IMGUI_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/vendor/imgui/Include")
 add_library(imgui STATIC ${IMGUI_SOURCE_DIR}/imgui_demo.cpp
@@ -34,12 +32,14 @@ add_library(imgui STATIC ${IMGUI_SOURCE_DIR}/imgui_demo.cpp
                          ${IMGUI_SOURCE_DIR}/imgui_tables.cpp                         
                          ${IMGUI_SOURCE_DIR}/imgui_widgets.cpp                         
                          ${IMGUI_SOURCE_DIR}/imgui.cpp
+                         ${IMGUI_SOURCE_DIR}/imgui_stdlib.cpp
                          ${IMGUI_INCLUDE_DIR}/imconfig.h                         
                          ${IMGUI_INCLUDE_DIR}/imgui_impl_sdl2.h                         
                          ${IMGUI_INCLUDE_DIR}/imgui_impl_opengl3.h                         
                          ${IMGUI_INCLUDE_DIR}/imgui_impl_opengl3_loader.h                         
                          ${IMGUI_INCLUDE_DIR}/imgui_internal.h                         
                          ${IMGUI_INCLUDE_DIR}/imgui.h                         
+                         ${IMGUI_INCLUDE_DIR}/imgui_stdlib.h                         
                          ${IMGUI_INCLUDE_DIR}/imstb_rectpack.h                         
                          ${IMGUI_INCLUDE_DIR}/imstb_textedit.h                         
                          ${IMGUI_INCLUDE_DIR}/imstb_truetype.h)
@@ -47,9 +47,10 @@ add_library(imgui STATIC ${IMGUI_SOURCE_DIR}/imgui_demo.cpp
 target_include_directories(imgui PUBLIC ${IMGUI_INCLUDE_DIR})
 target_link_libraries(imgui PUBLIC SDL2)
 
+set(MAIN_DIR "${CMAKE_SOURCE_DIR}/src")
 set(SOURCE_DIR "${CMAKE_SOURCE_DIR}/src/Source")
 set(INCLUDE_DIR "${CMAKE_SOURCE_DIR}/src/Include")
-add_executable(${PROJECT_NAME} ${SOURCE_DIR}/main.cpp 
+add_executable(${PROJECT_NAME} ${MAIN_DIR}/main.cpp 
                                ${SOURCE_DIR}/Bezier.cpp
                                ${SOURCE_DIR}/Window.cpp
                                ${SOURCE_DIR}/App.cpp

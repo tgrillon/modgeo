@@ -5,6 +5,7 @@
 #include <chrono>
 
 #include <imgui.h>
+#include <imgui_stdlib.h>
 #include <imgui_impl_sdl2.h>
 #include <imgui_impl_opengl3.h>
 
@@ -48,7 +49,6 @@ protected:
   void vsync_off();
  
 protected:
-  bool m_show_ui {true};
   bool m_exit {false};
 
   bool sync;

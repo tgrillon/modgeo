@@ -34,6 +34,7 @@ private:
   Framebuffer m_framebuffer; 
 
   bool m_show_style_editor{false};
+  bool m_show_ui {true};
 
   int m_resolution{10}; 
   bool m_need_update{false}; 
