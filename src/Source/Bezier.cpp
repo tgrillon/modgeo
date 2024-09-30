@@ -108,7 +108,7 @@ Grid Grid::load(const std::string &height_map, float scale)
 
   for (int z= 0; z < hm.height(); ++z)
     for (int x= 0; x < hm.width(); ++x)
-      g.m_points.emplace_back(static_cast<float>(x), scale*hm(x, z).r, static_cast<float>(z));
+      g.m_points.emplace_back(static_cast<float>(x), scale * hm(x, z).r, static_cast<float>(z));
 
   return g;
 }
@@ -118,6 +118,30 @@ void Grid::operator()(unsigned int x, unsigned int y, const Point& value)
   assert(x < m_width && y < m_height);
 
   m_points[y * m_width + x]= value;
+}
+
+std::vector<Grid> *load(const std::string &height_map, unsigned int max_grid_width, unsigned int max_grid_height, float scale)
+{
+  Image hm= read_image(height_map.c_str());
+  std::vector<Grid> g; 
+
+  unsigned int num_of_vPatch= hm.height() / max_grid_height;
+  unsigned int num_of_hPatch= hm.width() / max_grid_width;
+
+  g.resize(num_of_vPatch * num_of_hPatch);
+
+  for (const auto& [index, patch] : utils::enumerate(g))
+  {
+    for (int z= num_of_hPatch * index; z < num_of_hPatch * index + max_grid_height; ++z)
+    {
+      for (int x= num_of_vPatch * index; x < num_of_vPatch * index + max_grid_width; ++x)
+      {
+        patch.m_points.emplace_back(static_cast<float>(x), scale * hm(x, z).r, static_cast<float>(z));
+      }
+    }
+  }
+
+  return &g;
 }
 
 } // namespace mg

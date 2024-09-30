@@ -57,6 +57,7 @@ add_executable(${PROJECT_NAME} ${SOURCE_DIR}/main.cpp
                                ${SOURCE_DIR}/Viewer.cpp
                                ${SOURCE_DIR}/Implicit.cpp
                                ${SOURCE_DIR}/mathematic.cpp
+                               ${INCLUDE_DIR}/utils.h
                                ${INCLUDE_DIR}/Bezier.h
                                ${INCLUDE_DIR}/Window.h
                                ${INCLUDE_DIR}/App.h

@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "utils.h"
 #include "glcore.h"
 
 class Framebuffer

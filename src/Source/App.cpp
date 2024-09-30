@@ -4,16 +4,48 @@ App::App(const int width, const int height, const int major, const int minor, co
 {
   m_window= create_window(width, height, major, minor, samples);
   m_context= create_context(m_window);
+
+  // requetes pour mesurer le temps gpu
+  m_frame= 0;
+  glGenQueries(MAX_FRAMES, m_time_query);
+  
+  // initialise les queries, plus simple pour demarrer 
+  for(int i= 0; i < MAX_FRAMES; i++)
+  {
+    glBeginQuery(GL_TIME_ELAPSED, m_time_query[i]); 
+    glEndQuery(GL_TIME_ELAPSED);
+  }
 }
 
 App::~App()
 {
   if(m_context) release_context(m_context);
   if(m_window) release_window(m_window);
+  glDeleteQueries(MAX_FRAMES, m_time_query);
 }
 
 int App::prerender()
 {
+  #ifndef GK_RELEASE
+    // verifie que la requete est bien dispo sans attente...
+    {
+      GLuint ready= GL_FALSE;
+      glGetQueryObjectuiv(m_time_query[m_frame], GL_QUERY_RESULT_AVAILABLE, &ready);
+      if(ready != GL_TRUE)
+        printf("[oops] wait query, frame %d...\n", m_frame);
+    }
+  #endif    
+  // recupere la mesure precedente...
+  m_frame_time= 0;
+  glGetQueryObjecti64v(m_time_query[m_frame], GL_QUERY_RESULT, &m_frame_time);
+  
+  // prepare la mesure de la frame courante...
+  glBeginQuery(GL_TIME_ELAPSED, m_time_query[m_frame]);
+  
+  // mesure le temps d'execution du draw pour le cpu
+  // utilise std::chrono pour mesurer le temps cpu 
+  m_cpu_start= std::chrono::high_resolution_clock::now();
+
   // recupere les mouvements de la souris
   int mx, my;
   unsigned int mb= SDL_GetRelativeMouseState(&mx, &my);
@@ -72,6 +104,20 @@ int App::prerender()
   return update(global_time(), delta_time());
 }
 
+int App::postrender()
+{
+  m_cpu_stop= std::chrono::high_resolution_clock::now();
+  m_cpu_time= std::chrono::duration_cast<std::chrono::microseconds>(m_cpu_stop - m_cpu_start).count(); 
+  
+  glEndQuery(GL_TIME_ELAPSED);
+  
+  // selectionne une requete pour la frame suivante...
+  m_frame= (m_frame + 1) % MAX_FRAMES;
+
+  return 0;
+}
+
+
 int App::run()
 {
   if(init() < 0)
@@ -84,7 +130,10 @@ int App::run()
     if(prerender() < 0)
       break;
     
-    if(render() < 1)
+    if(render() < 1) 
+      break;
+
+    if(postrender() < 0)
       break;
     
     SDL_GL_SwapWindow(m_window);
@@ -147,7 +196,7 @@ int App::init_imgui()
   io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 
   // Setup Dear ImGui style
-  ImGui::StyleColorsDark();
+  ImGui::StyleColorsClassic();
 
   // When viewports are enabled we tweak WindowRounding/WindowBg so platform windows can look identical to regular ones.
   ImGuiStyle& style = ImGui::GetStyle();

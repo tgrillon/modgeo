@@ -1,5 +1,3 @@
-#include <iostream>
-
 #include "Framebuffer.h"
 
 Framebuffer::Framebuffer(unsigned int width, unsigned int height) : m_width(width), m_height(height)
@@ -20,7 +18,9 @@ Framebuffer::Framebuffer(unsigned int width, unsigned int height) : m_width(widt
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, m_rbo);
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-		std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!\n";
+	{
+		utils::error("ERROR::FRAMEBUFFER:: Framebuffer is not complete!");
+	}
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glBindTexture(GL_TEXTURE_2D, 0);

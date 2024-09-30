@@ -8,6 +8,8 @@
 #include "mesh.h"
 #include "vec.h"
 
+#include "utils.h"
+
 // Modélisation Géométrique
 namespace mg 
 {
@@ -45,7 +47,7 @@ const std::vector<std::vector<int>> binomal_coeffs = {
   {1, 29, 406, 3654, 23751, 118755, 475020, 1560780, 4292145, 10015005, 20030010, 34597290, 51895935, 67863915, 77558760, 77558760, 67863915, 51895935, 34597290, 20030010, 10015005, 4292145, 1560780, 475020, 118755, 23751, 3654, 406, 29, 1},
   {1, 30, 435, 4060, 27405, 142506, 593775, 2035800, 5852925, 14307150, 30045015, 54627300, 86493225, 119759850, 145422675, 155117520, 145422675, 119759850, 86493225, 54627300, 30045015, 14307150, 5852925, 2035800, 593775, 142506, 27405, 4060, 435, 30, 1},
   {1, 31, 465, 4495, 31465, 169911, 736281, 2629575, 7888725, 20160075, 44352165, 84672315, 141120525, 206253075, 265182525, 300540195, 300540195, 265182525, 206253075, 141120525, 84672315, 44352165, 20160075, 7888725, 2629575, 736281, 169911, 31465, 4495, 465, 31, 1}
-};
+}; // 32
 
 // class Curve; 
 // Point first_derivative(const Curve& p, double t, double e= 0.0001)
@@ -84,17 +86,21 @@ public:
 
   void operator()(unsigned int x, unsigned int y, const Point& value); 
   const Point& operator[](size_t i) { return m_points[i]; } 
-  const Point& at(size_t i) const { return m_points.at(i); } 
+  const Point& at(size_t i) const { return m_points.at(i); }  
   void operator=(const std::vector<Point>& points) { m_points= points; } 
 
   inline size_t width() const { return m_width; }
   inline size_t height() const { return m_height; }
 
+  friend std::vector<Grid>* load(const std::string& height_map, unsigned int max_grid_width= 10, unsigned int max_grid_height= 10, float scale= 100.0);
+
 private: 
-  std::vector<Point> m_points{}; 
+  mutable std::vector<Point> m_points{}; 
 
   unsigned int m_width{0}, m_height{0};
 };
+
+// std::vector<Grid>* load(const std::string& height_map, unsigned int max_size_grid= 10, float scale= 100.0);
 
 class Bezier
 {

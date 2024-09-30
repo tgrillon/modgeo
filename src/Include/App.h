@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <memory>
+#include <chrono>
 
 #include <imgui.h>
 #include <imgui_impl_sdl2.h>
@@ -11,6 +12,8 @@
 #include "texture.h"
 #include "glcore.h"
 #include "orbiter.h"
+
+const int MAX_FRAMES= 6;
 
 class App
 {
@@ -37,10 +40,13 @@ private:
 
 protected:
   virtual int prerender();
-  virtual int postrender() { return 0; }
+  virtual int postrender();
+
+  std::pair<int, int> cpu_time() const { return { m_cpu_time / 1000, m_cpu_time % 1000 }; }
+  std::pair<int, int> gpu_time() const { return { int(m_frame_time / 1e6), int((m_frame_time / 1000) % 1000) }; }
 
   void vsync_off();
-
+ 
 protected:
   bool m_show_ui {true};
   bool m_exit {false};
@@ -53,4 +59,12 @@ protected:
   Orbiter m_camera;
 
   ImGuiIO io; 
+
+  std::chrono::high_resolution_clock::time_point m_cpu_start;
+  std::chrono::high_resolution_clock::time_point m_cpu_stop;
+
+  GLuint m_time_query[MAX_FRAMES];
+  GLint64 m_frame_time;
+  int m_frame;
+  int m_cpu_time;
 };

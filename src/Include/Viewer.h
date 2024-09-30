@@ -1,11 +1,12 @@
 #pragma once
 
-#include "App.h"
 #include "draw.h"
 #include "mesh.h"
 
+#include "App.h"
 #include "Framebuffer.h"
 #include "Bezier.h"
+#include "utils.h"
 
 class Viewer : public App
 {
@@ -18,8 +19,10 @@ public:
   int render();
 
 private:
-  void render_ui();
-  void init_menu_bar(); 
+  int render_ui();
+  int render_any();
+
+  int render_menu_bar(); 
 
 private: 
   Mesh m_grid;
@@ -33,4 +36,5 @@ private:
   bool m_show_style_editor{false};
 
   int m_resolution{10}; 
+  bool m_need_update{false}; 
 };
