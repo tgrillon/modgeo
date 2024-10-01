@@ -77,5 +77,5 @@
     "variant": "cpp",
     "ranges": "cpp"
   },
-  "cmake.configureSettings": {"GKIT_DIR": "/home/friska/dev/cxx/gkit2light"}
+  // "cmake.configureSettings": {"GKIT_DIR": "/home/friska/dev/cxx/gkit2light"}
 }
