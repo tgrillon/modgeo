@@ -45,25 +45,31 @@ Viewer::Viewer() : App(1024, 640), m_framebuffer(window_width(), window_height()
 
 int Viewer::init_any()
 {
-  m_camera.projection(window_width(), window_height(), 45);
-
   m_grid= make_grid(10);
 
-  std::string heightmapPath= std::string(MAP_DIR) + "/heightmap2.jpg";
+  std::string heightmapPath= std::string(MAP_DIR) + "/heightmap3.jpg";
   // m_hm= mg::Grid::create(10, 10);
-  m_hm= mg::Grid::load(heightmapPath, -15.0f);
+  // m_hm= mg::Grid::load(heightmapPath, 15.0f);
   // m_hm(5, 5, {0, -30, 0});
-  m_bezier= mg::Bezier::create(m_hm);
+  // m_bezier= mg::Bezier::create(m_hm);
 
-  m_patch= m_bezier.poligonize(10);
+  // m_patch= m_bezier.poligonize(10);
+
+  std::vector<Point> points;
+
+  points= mg::genetrate_points(10, [](double t) {
+    return Point(10 * cos(t * 2 * M_PI), 10 * sin(t * 2 * M_PI), 10 * t * 2 * M_PI);
+  });
+
+  m_spline= mg::Spline::create(points);
+  m_mSpline= m_spline.poligonize(m_resolution);
 
   // Point p= {0, 30, 0};
   // m_bezier.control_point(5, 5, p);
 
   Point pmin, pmax; 
-  m_patch.bounds(pmin, pmax);
+  m_mSpline.bounds(pmin, pmax);
   m_camera.lookat(pmin, pmax);
-
   return 0;
 }
 
@@ -100,6 +106,17 @@ int Viewer::quit_any()
   return 0;
 }
 
+int Viewer::render_any()
+{
+  // m_bezier= mg::Bezier::create(5, 5);
+  // Point p= {0, (sin(global_time() * 0.002f) * 100), 0};
+  // m_bezier.control_point(5, 5, p);
+
+  draw(m_mSpline, Identity(), m_camera);  
+
+  return 0;
+}
+
 int Viewer::render_ui()
 {
   ImGui::DockSpaceOverViewport();
@@ -125,6 +142,8 @@ int Viewer::render_ui()
 
   // we rescale the framebuffer to the actual window size here and reset the glViewport 
   m_framebuffer.rescale(window_width, window_height);
+  glViewport(0, 0, window_width, window_height);
+  m_camera.projection(window_width, window_height, 45);
 
   // we get the screen position of the window
   ImVec2 pos = ImGui::GetCursorScreenPos();
@@ -142,10 +161,11 @@ int Viewer::render_ui()
   if (m_show_ui)
   {
     ImGui::Begin("Parameters");
-    ImGui::SliderInt("Resolution", &m_resolution, 3, 200);
+    ImGui::SliderInt("Resolution", &m_resolution, 3, 1000);
     if (ImGui::Button("Render"))
     {
-      m_patch= m_bezier.poligonize(m_resolution);
+      // m_patch= m_bezier.poligonize(m_resolution);
+      m_mSpline= m_spline.poligonize(m_resolution);
     }
     ImGui::End();
 
@@ -172,46 +192,25 @@ int Viewer::render_ui()
   return 0;
 }
 
-int Viewer::render_any()
-{
-  // m_bezier= mg::Bezier::create(5, 5);
-  // Point p= {0, (sin(global_time() * 0.002f) * 100), 0};
-  // m_bezier.control_point(5, 5, p);
-
-  draw(m_patch, Identity(), m_camera);  
-
-  return 0;
-}
-
 int Viewer::render_menu_bar()
 {
   ImGui::DockSpace(ImGui::GetID("DockSpace"));
 
   if (ImGui::BeginMainMenuBar()) 
   {
-    if (ImGui::BeginMenu("Edit")) 
+    // ImGui::MenuItem("Style Editor", NULL, &m_show_style_editor);
+    ImGui::MenuItem("Exit", NULL, &m_exit);
+    ImGui::MenuItem(m_show_ui ? "Hide UI" : "Show UI", NULL, &m_show_ui);
+    if (ImGui::MenuItem(m_dark_theme ? "Light Theme" : "Dark Theme", NULL, &m_dark_theme))
     {
-      ImGui::MenuItem("Style Editor", NULL, &m_show_style_editor);
-      ImGui::MenuItem("Control Panel", NULL, &m_show_ui);
-      ImGui::MenuItem("Exit", NULL, &m_exit);
-      ImGui::EndMenu();
-    }
-    if (ImGui::BeginMenu("Style"))
-    {
-      if (ImGui::MenuItem("Dark"))
+      if (m_dark_theme)
       {
         ImGui::StyleColorsDark();
       }
-      if (ImGui::MenuItem("Light"))
+      else 
       {
         ImGui::StyleColorsLight();
       }
-      if (ImGui::MenuItem("Classic"))
-      {
-        ImGui::StyleColorsClassic();
-      }
-
-      ImGui::EndMenu();
     }
 
     ImGui::EndMainMenuBar();

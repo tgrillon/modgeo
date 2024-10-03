@@ -147,7 +147,7 @@ int App::run()
   if(init() < 0)
     return -1;
   
-  glViewport(0, 0, window_width(), window_height());
+  // glViewport(0, 0, window_width(), window_height());
   
   while(events(m_window) && !m_exit)
   {

@@ -27,7 +27,9 @@ private:
 private: 
   Mesh m_grid;
   Mesh m_patch;
+  Mesh m_mSpline;
 
+  mg::Spline m_spline;
   mg::Bezier m_bezier;
   mg::Grid m_hm;
 
@@ -35,6 +37,7 @@ private:
 
   bool m_show_style_editor{false};
   bool m_show_ui {true};
+  bool m_dark_theme {true};
 
   int m_resolution{10}; 
   bool m_need_update{false}; 

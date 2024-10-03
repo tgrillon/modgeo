@@ -4,6 +4,7 @@
 #include <cmath>
 #include <random> 
 #include <memory> 
+#include <functional> 
 
 #include "mesh.h"
 #include "vec.h"
@@ -49,29 +50,45 @@ const std::vector<std::vector<int>> binomal_coeffs = {
   {1, 31, 465, 4495, 31465, 169911, 736281, 2629575, 7888725, 20160075, 44352165, 84672315, 141120525, 206253075, 265182525, 300540195, 300540195, 265182525, 206253075, 141120525, 84672315, 44352165, 20160075, 7888725, 2629575, 736281, 169911, 31465, 4495, 465, 31, 1}
 }; // 32
 
-// class Curve; 
-// Point first_derivative(const Curve& p, double t, double e= 0.0001)
-// {
-//   return (p(t + e) - p(t - e)) / (2 * e);
-// }
+std::vector<Point> genetrate_points(int resolution, std::function<Point(double)> fun);
 
-// Point second_derivative(const Curve& p, double t, double e= 0.0001)
-// {
-//   return (p(t + e) - 2 * p(t) + p(t - e)) / (e * e);
-// }
+class Curve
+{
+public:
+  Curve()=default;
 
-// class Curve
-// {
-// public: 
-//   inline Vector tangente(double t) const { return normalize(Vector(first_derivative(*this, t))); } 
-//   inline Vector normal(double t) const { return normalize(Vector(second_derivative(*this, t))); } 
-//   inline Vector binormal(double t) const { return normalize(cross(tangente(t), normal(t))); } 
+  inline virtual Vector tangente(double t) const { return normalize(Vector(first_derivative(*this, t, 0.0001))); } 
+  virtual Vector normal(double t) const=0;
+  inline virtual Vector binormal(double t) const { return normalize(cross(tangente(t), normal(t))); } 
 
-//   Point operator()(double t) const;
-// protected: 
+  virtual Point point(double t) const=0;
 
-// };
+  friend Point first_derivative(const Curve& c, double t, double e);
+  friend Point second_derivative(const Curve& c, double t, double e);
+};
 
+class Spline : public Curve
+{
+public:
+  Spline();
+  Spline(const std::vector<Point>& points);
+
+  virtual Vector normal(double t) const;
+
+  static Spline create(const std::vector<Point>& points);
+
+  Mesh poligonize(int resolution, GLenum type= GL_TRIANGLES);
+
+  virtual Point point(double t) const;
+
+  double bernstein(double u, int i, int m) const;
+  
+  Point point(double u, double theta) const;
+
+protected:
+  Vector m_ortho_vec;
+  std::vector<Point> m_control_points;
+};
 
 class Grid
 {
@@ -92,7 +109,7 @@ public:
   inline size_t width() const { return m_width; }
   inline size_t height() const { return m_height; }
 
-  friend std::vector<Grid>* load(const std::string& height_map, unsigned int max_grid_width, unsigned int max_grid_height, float scale);
+  friend std::vector<Grid> load(const std::string& height_map, unsigned int max_grid_width, unsigned int max_grid_height, float scale);
 
 private: 
   mutable std::vector<Point> m_points{}; 
@@ -106,6 +123,7 @@ class Bezier
 {
 public:
   Bezier();
+  Bezier(const Grid& grid);
 
   Mesh poligonize(int resolution) const; 
   
