@@ -39,13 +39,13 @@ static std::vector<unsigned char> key_states;
 int key_state( const SDL_Keycode key )
 {
   SDL_Scancode code= SDL_GetScancodeFromKey(key);
-  assert((size_t) code < key_states.size());
+  assert((int) code < key_states.size());
   return (int)  key_states[code];
 }
 void clear_key_state( const SDL_Keycode key )
 {
   SDL_Scancode code= SDL_GetScancodeFromKey(key);
-  assert((size_t) code < key_states.size());
+  assert((int) code < key_states.size());
   key_states[code]= 0;
 }
 
@@ -208,7 +208,7 @@ int events( Window window )
       
       case SDL_KEYDOWN:
         // modifier l'etat du clavier
-        if((size_t) event.key.keysym.scancode < key_states.size())
+        if((int) event.key.keysym.scancode < key_states.size())
         {
           key_states[event.key.keysym.scancode]= 1;
           last_key= event.key;    // conserver le dernier evenement
@@ -221,7 +221,7 @@ int events( Window window )
     
       case SDL_KEYUP:
         // modifier l'etat du clavier
-        if((size_t) event.key.keysym.scancode < key_states.size())
+        if((int) event.key.keysym.scancode < key_states.size())
         {
           key_states[event.key.keysym.scancode]= 0;
           last_key= event.key;    // conserver le dernier evenement

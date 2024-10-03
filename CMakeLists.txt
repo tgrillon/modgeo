@@ -47,6 +47,7 @@ add_library(imgui STATIC ${IMGUI_SOURCE_DIR}/imgui_demo.cpp
 target_include_directories(imgui PUBLIC ${IMGUI_INCLUDE_DIR})
 target_link_libraries(imgui PUBLIC SDL2)
 
+set(EXPRTK_DIR "${CMAKE_SOURCE_DIR}/vendor/exprtk")
 set(MAIN_DIR "${CMAKE_SOURCE_DIR}/src")
 set(SOURCE_DIR "${CMAKE_SOURCE_DIR}/src/Source")
 set(INCLUDE_DIR "${CMAKE_SOURCE_DIR}/src/Include")
@@ -68,9 +69,13 @@ add_executable(${PROJECT_NAME} ${MAIN_DIR}/main.cpp
                                ${INCLUDE_DIR}/mathematic.h
                                )
 
+                               
 target_link_libraries(${PROJECT_NAME} gkit
                                       imgui)
-target_include_directories(${PROJECT_NAME} PUBLIC ${INCLUDE_DIR})
+target_precompile_headers(${PROJECT_NAME} PRIVATE ${EXPRTK_DIR}/exprtk.hpp)
+target_include_directories(${PROJECT_NAME} PUBLIC ${INCLUDE_DIR} 
+                                                  ${EXPRTK_DIR}
+                                                  )
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC DATA_DIR="${DATA_DIR}"
                                                   OBJ_DIR="${OBJ_DIR}"

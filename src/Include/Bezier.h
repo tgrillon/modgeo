@@ -11,8 +11,8 @@
 
 #include "utils.h"
 
-// Modélisation Géométrique
-namespace mg 
+//! Geometrical Modeling
+namespace gm 
 {
 
 const std::vector<std::vector<int>> binomal_coeffs = {
@@ -50,97 +50,79 @@ const std::vector<std::vector<int>> binomal_coeffs = {
   {1, 31, 465, 4495, 31465, 169911, 736281, 2629575, 7888725, 20160075, 44352165, 84672315, 141120525, 206253075, 265182525, 300540195, 300540195, 265182525, 206253075, 141120525, 84672315, 44352165, 20160075, 7888725, 2629575, 736281, 169911, 31465, 4495, 465, 31, 1}
 }; // 32
 
-std::vector<Point> genetrate_points(int resolution, std::function<Point(double)> fun);
+std::vector<Point> curve_points(int resolution, const std::function<Point(double)>& function);
+
+std::vector<std::vector<Point>> surface_points(int resolution, const std::function<Point(double, double)>& function);
+
+double bernstein(double t, int k, int n);
+
+class Bezier
+{
+public: 
+  virtual Mesh polygonize(int resolution= 10, GLenum type= GL_TRIANGLES) const=0;
+  
+protected:
+  virtual Point point(double u, double v) const=0; 
+};
+
+class Patch : public Bezier
+{
+public: 
+  Patch();
+  Patch(const std::vector<std::vector<Point>>& points);
+
+  static Patch create(const std::vector<std::vector<Point>>& points);
+
+  virtual Mesh polygonize(int resolution= 10, GLenum type= GL_TRIANGLES) const override; 
+  virtual Point point(double u, double v) const override; 
+
+  int height() const;
+  int width() const;
+
+  int point_count() const;
+  
+protected:
+  std::vector<std::vector<Point>> m_control_points; 
+};  
 
 class Curve
 {
 public:
   Curve()=default;
 
-  inline virtual Vector tangente(double t) const { return normalize(Vector(first_derivative(*this, t, 0.0001))); } 
   virtual Vector normal(double t) const=0;
-  inline virtual Vector binormal(double t) const { return normalize(cross(tangente(t), normal(t))); } 
-
   virtual Point point(double t) const=0;
+
+  virtual Vector tangente(double t) const; 
+  virtual Vector binormal(double t) const;
 
   friend Point first_derivative(const Curve& c, double t, double e);
   friend Point second_derivative(const Curve& c, double t, double e);
 };
 
-class Spline : public Curve
+class Spline : public Curve, public Bezier
 {
 public:
   Spline();
   Spline(const std::vector<Point>& points);
 
-  virtual Vector normal(double t) const;
+  virtual Vector normal(double t) const override;
+  virtual Point point(double t) const override;
 
   static Spline create(const std::vector<Point>& points);
 
-  Mesh poligonize(int resolution, GLenum type= GL_TRIANGLES);
+  void radial_fun(const std::function<double(double, double)>& f);
 
-  virtual Point point(double t) const;
+  virtual Mesh polygonize(int resolution= 10, GLenum type= GL_TRIANGLES) const override;
+  virtual Point point(double u, double v) const override; 
 
-  double bernstein(double u, int i, int m) const;
-  
-  Point point(double u, double theta) const;
+  int point_count() const;
 
 protected:
-  Vector m_ortho_vec;
+  mutable Vector m_ortho_vec;
   std::vector<Point> m_control_points;
+
+  std::function<double(double, double)> m_radial_fun {[](double u, double v) {return 1.0;}};
 };
 
-class Grid
-{
-public: 
-  Grid()=default; 
-  ~Grid()=default; 
-
-  //! Create an n*m flat grid. 
-  static Grid create(unsigned int n, unsigned int m);
-  //! Load the grid corresponding to the provided height map. 
-  static Grid load(const std::string& height_map, float scale= 100.0);
-
-  void operator()(unsigned int x, unsigned int y, const Point& value); 
-  const Point& operator[](size_t i) { return m_points[i]; } 
-  const Point& at(size_t i) const { return m_points.at(i); }  
-  void operator=(const std::vector<Point>& points) { m_points= points; } 
-
-  inline size_t width() const { return m_width; }
-  inline size_t height() const { return m_height; }
-
-  friend std::vector<Grid> load(const std::string& height_map, unsigned int max_grid_width, unsigned int max_grid_height, float scale);
-
-private: 
-  mutable std::vector<Point> m_points{}; 
-
-  unsigned int m_width{0}, m_height{0};
-};
-
-// std::vector<Grid>* load(const std::string& height_map, unsigned int max_size_grid= 10, float scale= 100.0);
-
-class Bezier
-{
-public:
-  Bezier();
-  Bezier(const Grid& grid);
-
-  Mesh poligonize(int resolution) const; 
-  
-  static Bezier create(const Grid& grid);
-
-  Grid& control_point() { return m_control_points; }
-
-  inline size_t width() const { return m_control_points.width(); }
-  inline size_t height() const { return m_control_points.height(); }
-
-private: 
-
-  Point point(double u, double v) const;
-
-  double bernstein(double u, int i, int m) const;
-
-private:
-  Grid m_control_points; 
-};
 } // namespace mg
