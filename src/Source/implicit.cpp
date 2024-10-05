@@ -1,4 +1,4 @@
-#include "Implicit.h"
+#include "implicit.h"
 
 float Implicit::Value(const Point &p) const
 { 

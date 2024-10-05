@@ -1,9 +1,9 @@
 #pragma once
 
-#include <memory>
+#include "pch.h"
 
 #include "utils.h"
-#include "glcore.h"
+
 
 class Framebuffer
 {

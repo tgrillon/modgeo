@@ -1,4 +1,4 @@
-#include "Bezier.h"
+#include "bezier.h"
 
 #include "image_io.h"
 
@@ -86,12 +86,12 @@ double bernstein(double t, int k, int n)
 
 Point first_derivative(const Curve& c, double t, double e)
 {
-    return Point((c.point(t + e) - c.point(t - e))) / (2 * e);
+    return Point((c.point_curve(t + e) - c.point_curve(t - e))) / (2 * e);
 }
 
 Point second_derivative(const Curve& c, double t, double e)
 {
-    return (c.point(t + e) - 2 * c.point(t) + c.point(t - e)) / (e * e);
+    return (c.point_curve(t + e) - 2 * c.point_curve(t) + c.point_curve(t - e)) / (e * e);
 }
 
 /**************** CURVE ****************/
@@ -121,12 +121,7 @@ Spline Spline::create(const std::vector<Point> &points)
     return Spline(points); 
 }
 
-void Spline::radial_fun(const std::function<double(double, double)> &f)
-{
-    m_radial_fun= f;
-}
-
-Point Spline::point(double t) const
+Point Spline::point_curve(double t) const
 {
     Point p; 
     for (int c= 0; c < m_control_points.size(); ++c)
@@ -137,62 +132,59 @@ Point Spline::point(double t) const
     return p; 
 }
 
-Mesh Spline::polygonize(int n, GLenum type) const
+Revolution::Revolution(const std::vector<Point>& points) : Spline(points)
+{
+}
+
+Revolution Revolution::create(const std::vector<Point>& points)
+{
+  return Revolution(points);
+}
+
+void Revolution::radial_fun(const std::function<double(double, double)> &f)
+{
+    m_radial_fun= f;
+}
+
+Mesh Revolution::polygonize(int n) const
 {
     assert(n > 2);
-    assert(m_control_points.size() > 1);
+    assert(point_count() > 1);
 
-    Mesh mesh(type);
+    Mesh mesh(GL_TRIANGLES);
     double step= 1.0 / (n - 1);
 
     Vector ortho= tangente(step);
     m_ortho_vec= orthogonal(ortho);
 
-    switch(type)
-    {
-        case GL_LINE_STRIP:
-            for (int i= 0; i < n; ++i)
+    for (int i= 0; i < n; ++i)
+    { 
+        double u= step * i; 
+        for (int j= 0; j <= n; ++j)
+        {
+            double v= step * j; 
+            Point p= point(u, v);
+            mesh.vertex(p);
+
+            if (i > 0 && j > 0)
             {
-                double u= step * i;
-                for (int j= 0; j < n; ++j)
-                {
-                    double v= step * j;
-                    mesh.vertex(point(u, v));
-                }
+                int prev_i= i - 1;
+                int prev_j= j - 1;
+
+                mesh.triangle(prev_i * n + prev_j, i * n + j, i * n + prev_j);
+                mesh.triangle(prev_i * n + prev_j, prev_i * n + j, i * n + j);
             }
-            break;
-        case GL_TRIANGLES:
-            for (int i= 0; i < n; ++i)
-            { 
-                double u= step * i; 
-                for (int j= 0; j < n; ++j)
-                {
-                    double v= step * j; 
-                    Point p= point(u, v);
-                    mesh.vertex(p);
-
-                    if (i > 0 && j > 0)
-                    {
-                        int prev_i= i - 1;
-                        int prev_j= j - 1;
-
-                        mesh.triangle(prev_i * n + prev_j, i * n + j, i * n + prev_j);
-                        mesh.triangle(prev_i * n + prev_j, prev_i * n + j, i * n + j);
-                    }
-                }
-            }
-
-            break;
+        }
     }
 
     return mesh;
 }
 
-Point Spline::point(double u, double theta) const
+Point Revolution::point(double u, double theta) const
 {
-    return point(u) + m_radial_fun(u, theta) * (cos(2 *  M_PI * theta) * normal(u) + sin(2 *  M_PI * theta) * binormal(u));
+    return point_curve(u) + m_radial_fun(u, theta) * (cos(2 *  M_PI * theta) * normal(u) + sin(2 *  M_PI * theta) * binormal(u)); 
 }
-
+ 
 int Spline::point_count() const
 {
   return m_control_points.size();
@@ -205,70 +197,53 @@ Vector Spline::normal(double t) const
     return normalize(cross(tng, m_ortho_vec));
 }
 
-/**************** PATCH ****************/
+/**************** Bezier ****************/
 
-Patch::Patch() : m_control_points({})
+Bezier::Bezier() : m_control_points({})
 {
 }
 
-Patch::Patch(const std::vector<std::vector<Point>> &points) : m_control_points(points)
+Bezier::Bezier(const std::vector<std::vector<Point>> &points) : m_control_points(points)
 {
 }
 
-Patch Patch::create(const std::vector<std::vector<Point>> &points)
+Bezier Bezier::create(const std::vector<std::vector<Point>> &points)
 {
-  return Patch(points);
+  return Bezier(points);
 }
 
-Mesh Patch::polygonize(int n, GLenum type) const
+Mesh Bezier::polygonize(int n) const
 {
     assert(n > 2);
-    assert(width() > 1);
+    assert(point_count() > 4);
 
-    Mesh mesh(type); 
+    Mesh mesh(GL_TRIANGLES); 
     double step= 1.0 / (n - 1);
 
-    switch(type)
-    {
-        case GL_LINE_STRIP:
-            for (int i= 0; i < n; ++i)
+    for (int i= 0; i < n; ++i)
+    { 
+        double u= step * i; 
+        for (int j= 0; j < n; ++j)
+        {
+            double v= step * j; 
+            Point p= point(u, v);
+            mesh.vertex(p);
+
+            if (i > 0 && j > 0)
             {
-                double u= step * i;
-                for (int j= 0; j < n; ++j)
-                {
-                    double v= step * j;
-                    mesh.vertex(point(u, v));
-                }
+                int prev_i= i - 1;
+                int prev_j= j - 1;
+
+                mesh.triangle(prev_i * n + prev_j, i * n + prev_j, i * n + j);
+                mesh.triangle(prev_i * n + prev_j, i * n + j, prev_i * n + j);
             }
-            break;
-        case GL_TRIANGLES:
-            for (int i= 0; i < n; ++i)
-            { 
-                double u= step * i; 
-                for (int j= 0; j < n; ++j)
-                {
-                    double v= step * j; 
-                    Point p= point(u, v);
-                    mesh.vertex(p);
-
-                    if (i > 0 && j > 0)
-                    {
-                        int prev_i= i - 1;
-                        int prev_j= j - 1;
-
-                        mesh.triangle(prev_i * n + prev_j, i * n + prev_j, i * n + j);
-                        mesh.triangle(prev_i * n + prev_j, i * n + j, prev_i * n + j);
-                    }
-                }
-            }
-
-            break;
+        }
     }
 
     return mesh;
 }
 
-Point Patch::point(double u, double v) const
+Point Bezier::point(double u, double v) const
 {
     Point p; 
     for (int r= 0; r < height(); ++r)
@@ -281,17 +256,17 @@ Point Patch::point(double u, double v) const
     return p; 
 }
 
-int Patch::height() const
+int Bezier::height() const
 {
   return m_control_points.size();
 }
 
-int Patch::width() const
+int Bezier::width() const
 {
   return m_control_points.empty() ? 0 : m_control_points[0].size();
 }
 
-int Patch::point_count() const
+int Bezier::point_count() const
 {
   return height() * width();
 }

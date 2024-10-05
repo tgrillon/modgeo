@@ -11,7 +11,7 @@
 #include <iostream>
 
 #include "glcore.h"
-#include "Window.h"
+#include "window.h"
 #include "files.h"
 
 

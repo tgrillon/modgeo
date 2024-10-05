@@ -1,7 +1,5 @@
 #include "Viewer.h"
 
-#include <exprtk.hpp>
-
 Mesh make_grid(const int n= 10)
 {
     Mesh grid= Mesh(GL_LINES);
@@ -19,8 +17,8 @@ Mesh make_grid(const int n= 10)
     {
         float pz= float(z) - float(n)/2 + .5f;
         grid.vertex(Point(- float(n)/2 + .5f, 0, pz)); 
-        grid.vertex(Point(float(n)/2 - .5f, 0, pz)); 
-    }
+        grid.vertex(Point(float(n)/2 - .5f, 0, pz));  
+    } 
     
     // axes XYZ
     grid.color(Red());
@@ -32,7 +30,7 @@ Mesh make_grid(const int n= 10)
     grid.vertex(Point(0, 1, 0));
     
     grid.color(Blue());
-    grid.vertex(Point(0, .1, 0)); 
+    grid.vertex(Point(0, .1, 0));  
     grid.vertex(Point(0, .1, 1));
     
     glLineWidth(2);
@@ -40,7 +38,7 @@ Mesh make_grid(const int n= 10)
     return grid;
 }
 
-
+ 
 Viewer::Viewer() : App(1024, 640), m_framebuffer(window_width(), window_height())
 {
 }
@@ -56,7 +54,7 @@ int Viewer::init_any()
         return Point(10 * cos(t * 2 * M_PI), 10 * sin(t * 2 * M_PI), 10 * t * 2 * M_PI);
     });
 
-    m_spline= gm::Spline::create(points);
+    m_spline= gm::Revolution::create(points);
     m_mSpline= m_spline.polygonize(m_spline_resolution);
 
     std::vector<std::vector<Point>> surface; 
@@ -65,7 +63,7 @@ int Viewer::init_any()
       return Point(u * 10., sin(10 * v * 2 * M_PI), v * 10);
     });
 
-    m_patch= gm::Patch::create(surface);
+    m_patch= gm::Bezier::create(surface);
     m_mPatch= m_patch.polygonize(m_patch_resolution); 
 
     Point pmin, pmax;
@@ -75,6 +73,43 @@ int Viewer::init_any()
     return 0;
 }
 
+int Viewer::init_imgui()
+{
+    // Setup Dear ImGui context
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io= ImGui::GetIO(); (void)io;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking
+    io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+
+    // Setup Dear ImGui style
+    // ImGui::StyleColorsClassic();
+
+    // When viewports are enabled we tweak WindowRounding/WindowBg so platform windows can look identical to regular ones.
+    ImGuiStyle& style = ImGui::GetStyle();
+    if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+    {
+        style.WindowRounding = 0.0f;
+        style.Colors[ImGuiCol_WindowBg].w = 1.0f;
+    }
+
+    // Setup Platform/Renderer backends
+    ImGui_ImplSDL2_InitForOpenGL(m_window, m_context);
+    ImGui_ImplOpenGL3_Init("#version 330");
+
+    m_expr_patch= exprtk_wrapper_init();
+    add_double_variable(m_expr_patch, "u");
+    add_double_variable(m_expr_patch, "v");
+    set_expression_count(m_expr_patch, 3);
+
+    m_expr_spline= exprtk_wrapper_init();
+    add_double_variable(m_expr_spline, "t");
+    add_double_variable(m_expr_spline, "a");
+    set_expression_count(m_expr_spline, 4);
+
+    return 0;
+}
 
 int Viewer::render()
 {
@@ -109,6 +144,19 @@ int Viewer::quit_any()
     return 0;
 }
 
+int Viewer::quit_imgui()
+{
+    // Cleanup ImGui
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplSDL2_Shutdown();
+    ImGui::DestroyContext();
+
+    delete_exprtk(m_expr_spline);
+    delete_exprtk(m_expr_patch);
+
+    return 0;
+}
+
 int Viewer::render_any()
 {
     Transform model= Identity();
@@ -121,10 +169,36 @@ int Viewer::render_any()
 
     if (m_show_spline)
     {
+        if (m_spline_edges_only)
+        {
+            glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
+        }
+        else if (m_spline_points_only)
+        {
+            glPolygonMode(GL_FRONT_AND_BACK,GL_POINT);
+
+        }
+        else 
+        {
+            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        }
         param.draw(m_mSpline);
     }
     else if (m_show_patch)
     {
+        if (m_patch_edges_only)
+        {
+            glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
+        }
+        else if (m_patch_points_only)
+        {
+            glPolygonMode(GL_FRONT_AND_BACK,GL_POINT);
+
+        }
+        else 
+        {
+            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        }
         param.draw(m_mPatch);
     }
 
@@ -170,12 +244,12 @@ int Viewer::render_ui()
         ImVec2(1, 0)
     );
 
-    ImGui::End();
-
+    ImGui::End(); 
+ 
     if (m_show_ui)
     {
         ImGui::Begin("Parameters");
-        ImVec2 sz = ImVec2(-FLT_MIN, 0.0f);
+        ImVec2 sz = ImVec2(-FLT_MIN, 45.0f);
         if (m_show_spline)
         {
             if (ImGui::Button("Patch Demo", sz))
@@ -212,170 +286,140 @@ int Viewer::render_ui()
             if (ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip))
                 ImGui::SetTooltip("Activate spline demo.");
         }
-        ImGui::SeparatorText("Bézier Patch");
-        ImGui::PushID(0);
-        ImGui::SliderInt("Resolution", &m_patch_resolution, 3, 1000);
-        ImGui::PopID();
-        ImGui::PushID(1);
-        ImGui::InputText("X", surface_function_input_x, IM_ARRAYSIZE(surface_function_input_x));
-        ImGui::PopID();
-        ImGui::PushID(2);
-        ImGui::InputText("Y", surface_function_input_y, IM_ARRAYSIZE(surface_function_input_y));
-        ImGui::PopID();
-        ImGui::PushID(3);
-        ImGui::InputText("Z", surface_function_input_z, IM_ARRAYSIZE(surface_function_input_z));
-        ImGui::PopID();
-        ImGui::PushID(4);
-        ImGui::Checkbox("Edges only", &m_patch_edges_only);
-        if (ImGui::Button("Render"))
+        if (m_show_patch)
         {
-            exprtk::symbol_table<double> symbol_table;
-            double u = 0, v = 0;
-            symbol_table.add_variable("u", u);
-            symbol_table.add_variable("v", v);
-            symbol_table.add_constants();
-
-            std::vector<std::vector<Point>> surface; 
-            exprtk::parser<double> parser;
-
-            exprtk::expression<double> expression_x;
-            expression_x.register_symbol_table(symbol_table);
-            if (!parser.compile(surface_function_input_x, expression_x))
+            ImGui::SeparatorText("Bézier Patch");
+            ImGui::PushID(1);
+            ImGui::SliderInt("Resolution", &m_patch_resolution, 3, 1000);
+            ImGui::PopID();
+            ImGui::PushID(1);
+            ImGui::SliderInt("Surface degree", &m_surface_degree, 4, 31);
+            ImGui::PopID();
+            ImGui::Text("You can use the two variables 'u' and 'v' in each expression below :");
+            ImGui::PushID(1);
+            ImGui::InputText("X", surface_function_input_x, IM_ARRAYSIZE(surface_function_input_x));
+            ImGui::PopID();
+            ImGui::PushID(1);
+            ImGui::InputText("Y", surface_function_input_y, IM_ARRAYSIZE(surface_function_input_y));
+            ImGui::PopID();
+            ImGui::PushID(1);
+            ImGui::InputText("Z", surface_function_input_z, IM_ARRAYSIZE(surface_function_input_z));
+            ImGui::PopID();
+            ImGui::PushID(1);
+            ImGui::Checkbox("Edges only", &m_patch_edges_only);
+            ImGui::PopID();
+            ImGui::SameLine();
+            ImGui::PushID(1);
+            ImGui::Checkbox("Points only", &m_patch_points_only);
+            ImGui::PopID();
+            ImGui::NewLine();
+            if (ImGui::Button("Render", sz))
             {
-                std::cout << "Error in function parsing : surface_function_input_x" << std::endl;
-                exit(1);
+
+                set_expression_string(m_expr_patch, surface_function_input_x, 0);
+                set_expression_string(m_expr_patch, surface_function_input_y, 1);
+                set_expression_string(m_expr_patch, surface_function_input_z, 2);
+
+                if (!compile_expression(m_expr_patch))
+                {
+                    std::cout << "[Patch] Error in function parsing." << std::endl;
+                    exit(1);
+                }
+
+                std::vector<std::vector<Point>> surface; 
+                surface = gm::surface_points(m_surface_degree, [&](double u_val, double v_val) {
+                    set_double_variable_value(m_expr_patch, "u", u_val);
+                    set_double_variable_value(m_expr_patch, "v", v_val);
+                    double x = get_evaluated_value(m_expr_patch, 0); 
+                    double y = get_evaluated_value(m_expr_patch, 1); 
+                    double z = get_evaluated_value(m_expr_patch, 2); 
+                    return Point(x, y, z); 
+                });
+
+                m_patch= gm::Bezier::create(surface);
+                std::chrono::high_resolution_clock::time_point start= std::chrono::high_resolution_clock::now();
+                m_mPatch= m_patch.polygonize(m_patch_resolution);
+                std::chrono::high_resolution_clock::time_point stop= std::chrono::high_resolution_clock::now();
+
+                m_patch_time_polygonize= float(std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count());
+
+                Point pmin, pmax;
+                m_mPatch.bounds(pmin, pmax);
+                m_camera.lookat(pmin, pmax); 
             }
-
-            exprtk::expression<double> expression_y;
-            expression_y.register_symbol_table(symbol_table);
-            if (!parser.compile(surface_function_input_y, expression_y))
-            {
-                std::cout << "Error in function parsing : surface_function_input_y" << std::endl;
-                exit(1);
-            }
-
-            exprtk::expression<double> expression_z;
-            expression_z.register_symbol_table(symbol_table);
-            if (!parser.compile(surface_function_input_z, expression_z))
-            {
-                std::cout << "Error in function parsing : surface_function_input_z" << std::endl;
-                exit(1);
-            }
-
-            surface = gm::surface_points(10, [&expression_x, &expression_y, &expression_z, &u, &v](double u_val, double v_val) {
-                u= u_val;
-                v= v_val;
-                double x = expression_x.value(); 
-                double y = expression_y.value(); 
-                double z = expression_z.value(); 
-                return Point(x, y, z); 
-            });
-
-            m_patch= gm::Patch::create(surface);
-            std::chrono::high_resolution_clock::time_point start= std::chrono::high_resolution_clock::now();
-            m_mPatch= m_patch.polygonize(m_patch_resolution, m_patch_edges_only ? GL_LINE_STRIP : GL_TRIANGLES);
-            std::chrono::high_resolution_clock::time_point stop= std::chrono::high_resolution_clock::now();
-
-            m_patch_time_polygonize= float(std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count());
-
-            Point pmin, pmax;
-            m_mPatch.bounds(pmin, pmax);
-            m_camera.lookat(pmin, pmax); 
         }
-        ImGui::PopID();
 
-        ImGui::SeparatorText("Bézier Spline");
-        ImGui::PushID(5);
-        ImGui::SliderInt("Resolution", &m_spline_resolution, 3, 1000);
-        ImGui::PopID();
-        ImGui::PushID(6);
-        ImGui::InputText("X", spline_function_input_x, IM_ARRAYSIZE(spline_function_input_x));
-        ImGui::PopID();
-        ImGui::PushID(7);
-        ImGui::InputText("Y", spline_function_input_y, IM_ARRAYSIZE(spline_function_input_y));
-        ImGui::PopID();
-        ImGui::PushID(8);
-        ImGui::InputText("Z", spline_function_input_z, IM_ARRAYSIZE(spline_function_input_z));
-        ImGui::PopID();
-        ImGui::PushID(9);
-        ImGui::Checkbox("Edges only", &m_spline_edges_only);
-        ImGui::PopID();
-        ImGui::PushID(10);
-        ImGui::InputText("Radial Function", spline_radial_function_input, IM_ARRAYSIZE(spline_radial_function_input));
-        if (ImGui::Button("Render"))
-        {
-            exprtk::symbol_table<double> symbol_table;
-            double t= 0;
-            symbol_table.add_variable("t", t);
-            symbol_table.add_constants();
-
-            std::vector<Point> curve; 
-            exprtk::parser<double> parser;
-
-            exprtk::expression<double> expression_x;
-            expression_x.register_symbol_table(symbol_table);
-            if (!parser.compile(spline_function_input_x, expression_x))
+        if (m_show_spline)
+        {  
+            ImGui::SeparatorText("Bézier Spline");
+            ImGui::PushID(1);
+            ImGui::SliderInt("Resolution", &m_spline_resolution, 3, 1000);
+            ImGui::PopID();
+            ImGui::PushID(1);
+            ImGui::SliderInt("Curve degree", &m_curve_degree, 2, 31);
+            ImGui::PopID();
+            ImGui::Text("You can use a variable 't' in each expression below :");
+            ImGui::PushID(1);
+            ImGui::InputText("X", curve_function_input_x, IM_ARRAYSIZE(curve_function_input_x));
+            ImGui::PopID();
+            ImGui::PushID(1);
+            ImGui::InputText("Y", curve_function_input_y, IM_ARRAYSIZE(curve_function_input_y));
+            ImGui::PopID();
+            ImGui::PushID(1);
+            ImGui::InputText("Z", curve_function_input_z, IM_ARRAYSIZE(curve_function_input_z));
+            ImGui::PopID();
+            ImGui::PushID(1);
+            ImGui::Checkbox("Edges only", &m_spline_edges_only);
+            ImGui::PopID();
+            ImGui::SameLine();
+            ImGui::PushID(1);
+            ImGui::Checkbox("Points only", &m_spline_points_only);
+            ImGui::PopID();
+            ImGui::NewLine();
+            ImGui::Text("You can use the two variables 't' and 'a' (angle value) in the expression below :");
+            ImGui::PushID(1);
+            ImGui::InputText("Radial Function", spline_radial_function_input, IM_ARRAYSIZE(spline_radial_function_input));
+            if (ImGui::Button("Render", sz))
             {
-                std::cout << "Error in function parsing : spline_function_input_x" << std::endl;
-                exit(1);
+                set_expression_string(m_expr_spline, curve_function_input_x, 0);
+                set_expression_string(m_expr_spline, curve_function_input_y, 1);
+                set_expression_string(m_expr_spline, curve_function_input_z, 2);
+                set_expression_string(m_expr_spline, spline_radial_function_input, 3);
+
+                if (!compile_expression(m_expr_spline))
+                {
+                    std::cout << "[Spline] Error in function parsing." << std::endl;
+                    exit(1);
+                }
+
+                std::vector<Point> curve;  
+                curve = gm::curve_points(m_curve_degree, [&](double t_val) {
+                    set_double_variable_value(m_expr_spline, "t", t_val);
+                    double x = get_evaluated_value(m_expr_spline, 0); 
+                    double y = get_evaluated_value(m_expr_spline, 1); 
+                    double z = get_evaluated_value(m_expr_spline, 2); 
+                    return Point(x, y, z); 
+                });
+
+                m_spline= gm::Revolution::create(curve);
+                m_spline.radial_fun([&](double t_val, double a_val) {
+                    set_double_variable_value(m_expr_spline, "t", t_val);
+                    set_double_variable_value(m_expr_spline, "a", a_val);
+                    return get_evaluated_value(m_expr_spline, 3);
+                });
+
+                std::chrono::high_resolution_clock::time_point start= std::chrono::high_resolution_clock::now();
+                m_mSpline= m_spline.polygonize(m_spline_resolution);
+                std::chrono::high_resolution_clock::time_point stop= std::chrono::high_resolution_clock::now();
+
+                m_spline_time_polygonize= float(std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count());
+
+                Point pmin, pmax;
+                m_mSpline.bounds(pmin, pmax);
+                m_camera.lookat(pmin, pmax); 
             }
-
-            exprtk::expression<double> expression_y;
-            expression_y.register_symbol_table(symbol_table);
-            if (!parser.compile(spline_function_input_y, expression_y))
-            {
-                std::cout << "Error in function parsing : spline_function_input_y" << std::endl;
-                exit(1);
-            }
-
-            exprtk::expression<double> expression_z;
-            expression_z.register_symbol_table(symbol_table);
-            if (!parser.compile(spline_function_input_z, expression_z))
-            {
-                std::cout << "Error in function parsing : spline_function_input_z" << std::endl;
-                exit(1);
-            }
-
-            exprtk::symbol_table<double> symbol_table_r;
-            double u= 0, theta= 0;
-            symbol_table.add_variable("u", u);
-            symbol_table.add_variable("theta", theta);
-            symbol_table.add_constants();
-
-            exprtk::expression<double> expression_r;
-            expression_r.register_symbol_table(symbol_table);
-            if (!parser.compile(spline_radial_function_input, expression_r))
-            {
-                std::cout << "Error in function parsing : spline_radial_function_input" << std::endl;
-                exit(1);
-            }
-
-            curve = gm::curve_points(10, [&expression_x, &expression_y, &expression_z, &t](double t_val) {
-                t= t_val;
-                double x = expression_x.value(); 
-                double y = expression_y.value(); 
-                double z = expression_z.value(); 
-                return Point(x, y, z); 
-            });
-
-            m_spline= gm::Spline::create(curve);
-            m_spline.radial_fun([&expression_r, &u, &theta](double u_val, double theta_val) {
-                u= u_val; 
-                theta= theta_val;
-                return expression_r.value();
-            });
-
-            std::chrono::high_resolution_clock::time_point start= std::chrono::high_resolution_clock::now();
-            m_mSpline= m_spline.polygonize(m_spline_resolution, m_spline_edges_only ? GL_LINE_STRIP : GL_TRIANGLES);
-            std::chrono::high_resolution_clock::time_point stop= std::chrono::high_resolution_clock::now();
-
-            m_spline_time_polygonize= float(std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count());
-
-            Point pmin, pmax;
-            m_mSpline.bounds(pmin, pmax);
-            m_camera.lookat(pmin, pmax); 
+            ImGui::PopID();
         }
-        ImGui::PopID();
 
         ImGui::End();
 
@@ -387,16 +431,23 @@ int Viewer::render_ui()
         ImGui::Text("cpu : %i ms %i us ", cpums, cpuus);
         ImGui::Text("gpu : %i ms %i us", gpums, gpuus);
         ImGui::Text("total : %.2f ms", delta_time());
-        ImGui::SeparatorText("Spline Geometry");
-        ImGui::Text("#Triangle : %i ", m_mSpline.triangle_count());
-        ImGui::Text("#Vertex : %i ", m_mSpline.vertex_count());
-        ImGui::Text("#Control points : %i ", m_spline.point_count());
-        ImGui::Text("Poligonize Time : %.2f ms", m_spline_time_polygonize);
-        ImGui::SeparatorText("Patch Geometry");
-        ImGui::Text("#Triangle : %i ", m_mPatch.triangle_count());
-        ImGui::Text("#Vertex : %i ", m_mPatch.vertex_count());
-        ImGui::Text("#Control points : %i ", m_patch.point_count());
-        ImGui::Text("Poligonize Time : %.2f ms", m_patch_time_polygonize);
+        if (m_show_spline)
+        {
+            ImGui::SeparatorText("Spline Geometry");
+            ImGui::Text("#Triangle : %i ", m_mSpline.triangle_count());
+            ImGui::Text("#Vertex : %i ", m_mSpline.vertex_count());
+            ImGui::Text("#Control points : %i ", m_spline.point_count());
+            ImGui::Text("Poligonize Time : %.2f ms", m_spline_time_polygonize);
+        }
+        
+        if (m_show_patch)
+        {
+            ImGui::SeparatorText("Patch Geometry");
+            ImGui::Text("#Triangle : %i ", m_mPatch.triangle_count());
+            ImGui::Text("#Vertex : %i ", m_mPatch.vertex_count());
+            ImGui::Text("#Control points : %i ", m_patch.point_count());
+            ImGui::Text("Poligonize Time : %.2f ms", m_patch_time_polygonize);
+        }
         ImGui::End();
     }
 
@@ -411,7 +462,7 @@ int Viewer::render_ui()
     ImGui::Render();
 
     return 0;
-}
+} 
 
 int Viewer::render_menu_bar()
 {

@@ -110,6 +110,8 @@ void main( )
     normal= normalize(cross(t, b));
 #endif
 
+    color= vec4((normal.x+1.0)*0.5, (normal.y+1.0)*0.5, (normal.z+1.0)*0.5, 1.0);
+
 #ifndef USE_ALPHATEST
     float cos_theta= 1;
     #ifdef USE_LIGHT
@@ -121,12 +123,12 @@ void main( )
     #endif
     
     // hachure les triangles mal orientes
-    if(gl_FrontFacing == false)
-    {
-        ivec2 pixel= ivec2(gl_FragCoord.xy / 4) % ivec2(2, 2);
-        if((pixel.x ^ pixel.y) == 0)
-            color= vec4(0.8, 0.4, 0, 1);
-    }
+    // if(gl_FrontFacing == false)
+    // {
+    //     ivec2 pixel= ivec2(gl_FragCoord.xy / 4) % ivec2(2, 2);
+    //     if((pixel.x ^ pixel.y) == 0)
+    //         color= vec4(0.8, 0.4, 0, 1);
+    // }
     
     color.rgb= color.rgb * cos_theta;
 #endif

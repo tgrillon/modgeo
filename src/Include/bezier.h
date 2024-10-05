@@ -1,13 +1,6 @@
 #pragma once
 
-#include <vector>
-#include <cmath>
-#include <random> 
-#include <memory> 
-#include <functional> 
-
-#include "mesh.h"
-#include "vec.h"
+#include "pch.h"
 
 #include "utils.h"
 
@@ -56,25 +49,16 @@ std::vector<std::vector<Point>> surface_points(int resolution, const std::functi
 
 double bernstein(double t, int k, int n);
 
-class Bezier
+class Bezier 
 {
 public: 
-  virtual Mesh polygonize(int resolution= 10, GLenum type= GL_TRIANGLES) const=0;
-  
-protected:
-  virtual Point point(double u, double v) const=0; 
-};
+  Bezier();
+  Bezier(const std::vector<std::vector<Point>>& points);
 
-class Patch : public Bezier
-{
-public: 
-  Patch();
-  Patch(const std::vector<std::vector<Point>>& points);
+  static Bezier create(const std::vector<std::vector<Point>>& points);
 
-  static Patch create(const std::vector<std::vector<Point>>& points);
-
-  virtual Mesh polygonize(int resolution= 10, GLenum type= GL_TRIANGLES) const override; 
-  virtual Point point(double u, double v) const override; 
+  Mesh polygonize(int resolution= 10) const; 
+  Point point(double u, double v) const; 
 
   int height() const;
   int width() const;
@@ -91,7 +75,7 @@ public:
   Curve()=default;
 
   virtual Vector normal(double t) const=0;
-  virtual Point point(double t) const=0;
+  virtual Point point_curve(double t) const=0;
 
   virtual Vector tangente(double t) const; 
   virtual Vector binormal(double t) const;
@@ -100,28 +84,41 @@ public:
   friend Point second_derivative(const Curve& c, double t, double e);
 };
 
-class Spline : public Curve, public Bezier
+class Spline : public Curve
 {
 public:
   Spline();
   Spline(const std::vector<Point>& points);
 
-  virtual Vector normal(double t) const override;
-  virtual Point point(double t) const override;
+  Vector normal(double t) const override;
+  Point point_curve(double t) const override;
 
   static Spline create(const std::vector<Point>& points);
-
-  void radial_fun(const std::function<double(double, double)>& f);
-
-  virtual Mesh polygonize(int resolution= 10, GLenum type= GL_TRIANGLES) const override;
-  virtual Point point(double u, double v) const override; 
 
   int point_count() const;
 
 protected:
   mutable Vector m_ortho_vec;
+
   std::vector<Point> m_control_points;
 
+};
+
+class Revolution : public Spline 
+{
+public: 
+  Revolution()=default;
+  Revolution(const std::vector<Point>& points);
+
+  static Revolution create(const std::vector<Point>& points);
+
+  Mesh polygonize(int resolution= 10) const;
+
+  Point point(double u, double v) const; 
+
+  void radial_fun(const std::function<double(double, double)>& f);
+
+private: 
   std::function<double(double, double)> m_radial_fun {[](double u, double v) {return 1.0;}};
 };
 

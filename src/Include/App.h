@@ -1,18 +1,6 @@
 #pragma once
 
-#include <iostream>
-#include <memory>
-#include <chrono>
-
-#include <imgui.h>
-#include <imgui_stdlib.h>
-#include <imgui_impl_sdl2.h>
-#include <imgui_impl_opengl3.h>
-
-#include "Window.h"
-#include "texture.h"
-#include "glcore.h"
-#include "orbiter.h"
+#include "pch.h"
 
 const int MAX_FRAMES= 6;
 

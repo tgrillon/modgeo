@@ -5,10 +5,6 @@
 #include <string>
 #include <vector>
 
-#include <imgui.h>
-#include <imgui_impl_sdl2.h>
-#include <imgui_impl_opengl3.h>
-
 #include <SDL2/SDL.h>
 
 
@@ -29,7 +25,7 @@ typedef SDL_GLContext Context;
 
 //! cree et configure un contexte opengl.
 Context create_context( Window window );
-//! detruit le contexte openGL. 
+//! detruit le contexte openGL.
 void release_context( Context context );
 
 //! renvoie la largeur de la fenetre de l'application.

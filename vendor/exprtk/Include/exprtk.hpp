@@ -55,7 +55,6 @@
 #include <utility>
 #include <vector>
 
-
 namespace exprtk
 {
    #ifdef exprtk_enable_debugging
