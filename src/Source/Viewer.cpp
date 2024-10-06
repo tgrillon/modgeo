@@ -21,7 +21,7 @@ Mesh make_grid(const int n= 10)
     } 
     
     // axes XYZ
-    grid.color(Red());
+    grid.color(Red()); 
     grid.vertex(Point(0, .1, 0));
     grid.vertex(Point(1, .1, 0));
     
@@ -45,26 +45,54 @@ Viewer::Viewer() : App(1024, 640), m_framebuffer(window_width(), window_height()
 
 int Viewer::init_any()
 {
-    m_grid= make_grid(10);
+    // m_grid= make_grid(10);
 
     std::string heightmapPath= std::string(MAP_DIR) + "/heightmap3.jpg";
-    std::vector<Point> points;
+    std::vector<Point> curve;
 
-    points= gm::curve_points(10, [](double t) {
-        return Point(10 * cos(t * 2 * M_PI), 10 * sin(t * 2 * M_PI), 10 * t * 2 * M_PI);
+    curve= gm::curve_points(m_curve_degree, [](double t) {
+        return Point(10 * t, 0, 0);
     });
 
-    m_spline= gm::Revolution::create(points);
-    m_mSpline= m_spline.polygonize(m_spline_resolution);
+    m_line= Mesh(GL_LINE_STRIP);
+    for (const auto& p : curve)
+    {
+        m_line.vertex(p);
+    }
+
+    m_spline= gm::Revolution::create(curve);
+
+    std::chrono::high_resolution_clock::time_point start= std::chrono::high_resolution_clock::now();
+    m_mSpline= m_spline.polygonize(4);
+    std::chrono::high_resolution_clock::time_point stop= std::chrono::high_resolution_clock::now();
+
+    m_spline_time_polygonize= float(std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count());
 
     std::vector<std::vector<Point>> surface; 
 
-    surface= gm::surface_points(10, [](double u, double v) {
+    surface= gm::surface_points(m_surface_degree, [](double u, double v) {
       return Point(u * 10., sin(10 * v * 2 * M_PI), v * 10);
     });
 
+    m_grid= Mesh(GL_LINES);
+    for (int h= 1; h < m_surface_degree; ++h)
+    {
+        for (int w= 1; w < m_surface_degree; ++w)
+        {
+            m_grid.vertex(surface[h][w-1]);
+            m_grid.vertex(surface[h][w]);
+
+            m_grid.vertex(surface[h-1][w]);
+            m_grid.vertex(surface[h][w]);
+        }
+    }
+
     m_patch= gm::Bezier::create(surface);
+    start= std::chrono::high_resolution_clock::now();
     m_mPatch= m_patch.polygonize(m_patch_resolution); 
+    stop= std::chrono::high_resolution_clock::now();
+
+    m_patch_time_polygonize= float(std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count());
 
     Point pmin, pmax;
     m_mSpline.bounds(pmin, pmax);
@@ -183,6 +211,11 @@ int Viewer::render_any()
             glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
         }
         param.draw(m_mSpline);
+
+        if (m_show_spline_curve)
+        {
+            param.draw(m_line);
+        }
     }
     else if (m_show_patch)
     {
@@ -200,6 +233,11 @@ int Viewer::render_any()
             glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
         }
         param.draw(m_mPatch);
+
+        if (m_show_patch_grid)
+        {
+            param.draw(m_grid);
+        }
     }
 
     return 0;
@@ -290,7 +328,7 @@ int Viewer::render_ui()
         {
             ImGui::SeparatorText("Bézier Patch");
             ImGui::PushID(1);
-            ImGui::SliderInt("Resolution", &m_patch_resolution, 3, 1000);
+            ImGui::SliderInt("Resolution", &m_patch_resolution, 4, 1000);
             ImGui::PopID();
             ImGui::PushID(1);
             ImGui::SliderInt("Surface degree", &m_surface_degree, 4, 31);
@@ -311,6 +349,10 @@ int Viewer::render_ui()
             ImGui::SameLine();
             ImGui::PushID(1);
             ImGui::Checkbox("Points only", &m_patch_points_only);
+            ImGui::PopID();
+            ImGui::SameLine();
+            ImGui::PushID(1);
+            ImGui::Checkbox("Grid", &m_show_patch_grid);
             ImGui::PopID();
             ImGui::NewLine();
             if (ImGui::Button("Render", sz))
@@ -335,6 +377,19 @@ int Viewer::render_ui()
                     double z = get_evaluated_value(m_expr_patch, 2); 
                     return Point(x, y, z); 
                 });
+
+                m_grid.clear();
+                for (int h= 1; h < m_surface_degree; ++h)
+                {
+                    for (int w= 1; w < m_surface_degree; ++w)
+                    {
+                        m_grid.vertex(surface[h][w-1]);
+                        m_grid.vertex(surface[h][w]);
+
+                        m_grid.vertex(surface[h-1][w]);
+                        m_grid.vertex(surface[h][w]);
+                    }
+                }
 
                 m_patch= gm::Bezier::create(surface);
                 std::chrono::high_resolution_clock::time_point start= std::chrono::high_resolution_clock::now();
@@ -375,7 +430,10 @@ int Viewer::render_ui()
             ImGui::PushID(1);
             ImGui::Checkbox("Points only", &m_spline_points_only);
             ImGui::PopID();
-            ImGui::NewLine();
+            ImGui::SameLine();
+            ImGui::PushID(1);
+            ImGui::Checkbox("Curve", &m_show_spline_curve);
+            ImGui::PopID();
             ImGui::Text("You can use the two variables 't' and 'a' (angle value) in the expression below :");
             ImGui::PushID(1);
             ImGui::InputText("Radial Function", spline_radial_function_input, IM_ARRAYSIZE(spline_radial_function_input));
@@ -400,6 +458,12 @@ int Viewer::render_ui()
                     double z = get_evaluated_value(m_expr_spline, 2); 
                     return Point(x, y, z); 
                 });
+
+                m_line.clear();
+                for (const auto& p : curve)
+                {
+                    m_line.vertex(p);
+                }
 
                 m_spline= gm::Revolution::create(curve);
                 m_spline.radial_fun([&](double t_val, double a_val) {

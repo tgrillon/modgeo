@@ -1,19 +1,4 @@
-#include <cassert>
-#include <cstdio>
-#include <cstdio>
-#include <cstring>
-#include <cmath>
-
-#include <chrono>
-#include <vector>
-#include <set>
-#include <string>
-#include <iostream>
-
-#include "glcore.h"
-#include "window.h"
-#include "files.h"
-
+#include "Window.h"
 
 static float aspect= 1;
 

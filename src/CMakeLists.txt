@@ -2,7 +2,7 @@ set(SOURCE_DIR "./Source")
 set(INCLUDE_DIR "./Include")
 add_executable(${PROJECT_NAME} main.cpp 
                                ${SOURCE_DIR}/bezier.cpp
-                               ${SOURCE_DIR}/window.cpp
+                               ${SOURCE_DIR}/Window.cpp
                                ${SOURCE_DIR}/App.cpp
                                ${SOURCE_DIR}/Framebuffer.cpp
                                ${SOURCE_DIR}/Viewer.cpp
@@ -11,7 +11,7 @@ add_executable(${PROJECT_NAME} main.cpp
                                ${SOURCE_DIR}/pch.cpp
                                ${INCLUDE_DIR}/utils.h
                                ${INCLUDE_DIR}/bezier.h
-                               ${INCLUDE_DIR}/window.h
+                               ${INCLUDE_DIR}/Window.h
                                ${INCLUDE_DIR}/App.h
                                ${INCLUDE_DIR}/Framebuffer.h
                                ${INCLUDE_DIR}/Viewer.h

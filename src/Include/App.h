@@ -2,6 +2,8 @@
 
 #include "pch.h"
 
+#include "Window.h"
+
 const int MAX_FRAMES= 6;
 
 class App

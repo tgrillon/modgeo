@@ -47,6 +47,9 @@ std::vector<Point> curve_points(int resolution, const std::function<Point(double
 
 std::vector<std::vector<Point>> surface_points(int resolution, const std::function<Point(double, double)>& function);
 
+Vector orthogonal(const Vector& v);
+void orthonormal(const Vector& v, Vector& x, Vector& y);
+
 double bernstein(double t, int k, int n);
 
 class Bezier 
@@ -98,8 +101,6 @@ public:
   int point_count() const;
 
 protected:
-  mutable Vector m_ortho_vec;
-
   std::vector<Point> m_control_points;
 
 };
@@ -112,7 +113,8 @@ public:
 
   static Revolution create(const std::vector<Point>& points);
 
-  Mesh polygonize(int resolution= 10) const;
+  Mesh polygonize(int resolution) const;
+  Mesh polygonize(int n, int m) const;
 
   Point point(double u, double v) const; 
 
