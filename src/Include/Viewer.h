@@ -31,9 +31,12 @@ private:
   Mesh m_mSpline;
   Mesh m_mPatch;
   Mesh m_line;
+  Mesh m_mTeapot;
 
   gm::Revolution m_spline;
   gm::Bezier m_patch;
+
+  gm::Object m_teapot;
 
   Framebuffer m_framebuffer; 
 
@@ -42,7 +45,7 @@ private:
   bool m_patch_edges_only {false};
   bool m_patch_points_only {false};
 
-  char spline_radial_function_input[256] {"((sin(110 * t) + 1) * 0.5 + 1) * max(1.5pi, a)"};
+  char spline_radial_function_input[256] {"1"};
   char curve_function_input_x[256] {"100 * t"};
   char curve_function_input_y[256] {"25 * sin(2t) * cos(2t)"};
   char curve_function_input_z[256] {"0"};     
@@ -54,14 +57,14 @@ private:
   bool m_show_ui {true};
   bool m_dark_theme {true};
 
-  bool m_show_spline {true}; 
+  bool m_show_spline {false}; 
   bool m_show_spline_curve {false}; 
-  bool m_show_patch {false};
+  bool m_show_patch {true};
   bool m_show_patch_grid {false};
 
   int m_patch_resolution {10}; 
-  int m_surface_degree {10};
-  int m_curve_degree {10};
+  int m_nb_control_points_patch {10};
+  int m_nb_control_points_spline {10};
   int m_spline_resolution {10}; 
   bool m_need_update{false}; 
 

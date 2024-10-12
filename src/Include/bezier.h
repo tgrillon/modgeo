@@ -48,6 +48,7 @@ std::vector<Point> curve_points(int resolution, const std::function<Point(double
 std::vector<std::vector<Point>> surface_points(int resolution, const std::function<Point(double, double)>& function);
 
 Vector orthogonal(const Vector& v);
+
 void orthonormal(const Vector& v, Vector& x, Vector& y);
 
 double bernstein(double t, int k, int n);
@@ -61,46 +62,75 @@ public:
   static Bezier create(const std::vector<std::vector<Point>>& points);
 
   Mesh polygonize(int resolution= 10) const; 
-  Point point(double u, double v) const; 
 
   int height() const;
   int width() const;
 
   int point_count() const;
   
+  Point point(double u, double v) const; 
+
 protected:
   std::vector<std::vector<Point>> m_control_points; 
 };  
+
+
+class Object 
+{
+public:
+  Object()=default; 
+  Object(const std::vector<Bezier>& patches); 
+
+  void load_pacthes(const std::string& filename);
+
+  Mesh polygonize(int resolution) const; 
+
+private:
+  std::vector<Bezier> m_patches {}; 
+};
 
 class Curve
 {
 public:
   Curve()=default;
 
-  virtual Vector normal(double t) const=0;
+  virtual Vector tangent(double t) const; 
+  virtual Vector binormal(double t) const;
+  virtual Vector normal(double t) const;
+
   virtual Point point_curve(double t) const=0;
 
-  virtual Vector tangente(double t) const; 
-  virtual Vector binormal(double t) const;
-
-  friend Point first_derivative(const Curve& c, double t, double e);
-  friend Point second_derivative(const Curve& c, double t, double e);
+  virtual Vector first_derivative(double t, double e=0.001) const;
+  virtual Vector second_derivative(double t, double e=0.001) const;
 };
 
 class Spline : public Curve
 {
+public: 
+  enum class Type
+  {
+    BEZIER=0,
+    CATMULL_ROM
+  };
 public:
   Spline();
-  Spline(const std::vector<Point>& points);
+  Spline(const std::vector<Point>& points, Type type= Type::BEZIER);
 
-  Vector normal(double t) const override;
-  Point point_curve(double t) const override;
-
-  static Spline create(const std::vector<Point>& points);
+  static Spline create(const std::vector<Point>& points, Type type= Type::BEZIER);
 
   int point_count() const;
 
 protected:
+  double get_t(double t, unsigned int ip0, unsigned int ip1) const;
+  Point point_curve(double t) const override;
+  
+  Vector first_derivative(double t, double e= 0.001) const override;
+  Vector second_derivative(double t, double e= 0.001) const override;
+
+protected:
+  Type m_type {Type::BEZIER};
+
+  double m_alpha {0.5};
   std::vector<Point> m_control_points;
 
 };
@@ -109,12 +139,11 @@ class Revolution : public Spline
 {
 public: 
   Revolution()=default;
-  Revolution(const std::vector<Point>& points);
+  Revolution(const std::vector<Point>& points, Type type=Type::BEZIER);
 
-  static Revolution create(const std::vector<Point>& points);
+  static Revolution create(const std::vector<Point>& points, Type type=Type::BEZIER);
 
   Mesh polygonize(int resolution) const;
-  Mesh polygonize(int n, int m) const;
 
   Point point(double u, double v) const; 
 
