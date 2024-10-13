@@ -47,56 +47,68 @@ int Viewer::init_any()
 {
     // m_grid= make_grid(10);
 
-    std::string heightmapPath= std::string(MAP_DIR) + "/heightmap3.jpg";
-    std::vector<Point> curve;
+    // std::string heightmapPath= std::string(MAP_DIR) + "/heightmap3.jpg";
+    // std::vector<Point> curve;
 
-    curve= gm::curve_points(m_curve_degree, [](double t) {
-        return Point(10 * t, 0, 0);
-    });
+    // curve= gm::curve_points(m_nb_control_points_spline, [](double t) {
+    //     return Point(10 * t, 0, 0);
+    // });
 
-    m_line= Mesh(GL_LINE_STRIP);
-    for (const auto& p : curve)
-    {
-        m_line.vertex(p);
-    }
+    // m_line= Mesh(GL_LINE_STRIP);
+    // for (const auto& p : curve)
+    // {
+    //     m_line.vertex(p);
+    // }
 
-    m_spline= gm::Revolution::create(curve);
+    // m_spline= gm::Revolution::create(curve);
 
-    std::chrono::high_resolution_clock::time_point start= std::chrono::high_resolution_clock::now();
-    m_mSpline= m_spline.polygonize(4);
-    std::chrono::high_resolution_clock::time_point stop= std::chrono::high_resolution_clock::now();
+    // std::chrono::high_resolution_clock::time_point start= std::chrono::high_resolution_clock::now();
+    // m_mSpline= m_spline.polygonize(4);
+    // std::chrono::high_resolution_clock::time_point stop= std::chrono::high_resolution_clock::now();
 
-    m_spline_time_polygonize= float(std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count());
+    // m_spline_time_polygonize= float(std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count());
 
-    std::vector<std::vector<Point>> surface; 
+    // std::vector<std::vector<Point>> surface; 
 
-    surface= gm::surface_points(m_surface_degree, [](double u, double v) {
-      return Point(u * 10., sin(10 * v * 2 * M_PI), v * 10);
-    });
+    // surface= gm::surface_points(m_nb_control_points_patch, [](double u, double v) {
+    //   return Point(u * 10., sin(10 * v * 2 * M_PI), v * 10);
+    // });
 
-    m_grid= Mesh(GL_LINES);
-    for (int h= 1; h < m_surface_degree; ++h)
-    {
-        for (int w= 1; w < m_surface_degree; ++w)
-        {
-            m_grid.vertex(surface[h][w-1]);
-            m_grid.vertex(surface[h][w]);
+    // m_grid= Mesh(GL_LINES);
+    // for (int h= 1; h < m_nb_control_points_patch; ++h)
+    // {
+    //     for (int w= 1; w < m_nb_control_points_patch; ++w)
+    //     {
+    //         m_grid.vertex(surface[h][w-1]);
+    //         m_grid.vertex(surface[h][w]);
 
-            m_grid.vertex(surface[h-1][w]);
-            m_grid.vertex(surface[h][w]);
-        }
-    }
+    //         m_grid.vertex(surface[h-1][w]);
+    //         m_grid.vertex(surface[h][w]);
+    //     }
+    // }
 
-    m_patch= gm::Bezier::create(surface);
-    start= std::chrono::high_resolution_clock::now();
-    m_mPatch= m_patch.polygonize(m_patch_resolution); 
-    stop= std::chrono::high_resolution_clock::now();
+    // m_patch= gm::Bezier::create(surface);
+    // start= std::chrono::high_resolution_clock::now();
+    // m_mPatch= m_patch.polygonize(m_patch_resolution); 
+    // stop= std::chrono::high_resolution_clock::now();
+
+    // m_patch_time_polygonize= float(std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count());
+
+    // Point pmin, pmax;
+    // m_mSpline.bounds(pmin, pmax);
+    // m_camera.lookat(pmin, pmax); 
+
+
+    auto start= std::chrono::high_resolution_clock::now();
+    m_teapot.load_pacthes(std::string(DATA_DIR) + "/teapot");
+    m_mTeapot= m_teapot.polygonize(4);
+    auto stop= std::chrono::high_resolution_clock::now();
 
     m_patch_time_polygonize= float(std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count());
 
     Point pmin, pmax;
-    m_mSpline.bounds(pmin, pmax);
-    m_camera.lookat(pmin, pmax); 
+    m_mTeapot.bounds(pmin, pmax);
+    m_camera.lookat(pmin, pmax);
 
     return 0;
 }
@@ -168,6 +180,7 @@ int Viewer::quit_any()
     m_grid.release();
     m_mPatch.release();
     m_mSpline.release();
+    m_mTeapot.release();
 
     return 0;
 }
@@ -210,12 +223,12 @@ int Viewer::render_any()
         {
             glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
         }
-        param.draw(m_mSpline);
+        // param.draw(m_mSpline);
 
-        if (m_show_spline_curve)
-        {
-            param.draw(m_line);
-        }
+        // if (m_show_spline_curve)
+        // {
+            // param.draw(m_line);
+        // }
     }
     else if (m_show_patch)
     {
@@ -232,12 +245,13 @@ int Viewer::render_any()
         {
             glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
         }
-        param.draw(m_mPatch);
+        // param.draw(m_mPatch);
 
-        if (m_show_patch_grid)
-        {
-            param.draw(m_grid);
-        }
+        // if (m_show_patch_grid)
+        // {
+            // param.draw(m_grid);
+        // }
+        param.draw(m_mTeapot);
     }
 
     return 0;
@@ -331,7 +345,7 @@ int Viewer::render_ui()
             ImGui::SliderInt("Resolution", &m_patch_resolution, 4, 1000);
             ImGui::PopID();
             ImGui::PushID(1);
-            ImGui::SliderInt("Surface degree", &m_surface_degree, 4, 31);
+            ImGui::SliderInt("#Control points", &m_nb_control_points_patch, 4, 31);
             ImGui::PopID();
             ImGui::Text("You can use the two variables 'u' and 'v' in each expression below :");
             ImGui::PushID(1);
@@ -369,7 +383,7 @@ int Viewer::render_ui()
                 }
 
                 std::vector<std::vector<Point>> surface; 
-                surface = gm::surface_points(m_surface_degree, [&](double u_val, double v_val) {
+                surface = gm::surface_points(m_nb_control_points_patch, [&](double u_val, double v_val) {
                     set_double_variable_value(m_expr_patch, "u", u_val);
                     set_double_variable_value(m_expr_patch, "v", v_val);
                     double x = get_evaluated_value(m_expr_patch, 0); 
@@ -379,9 +393,9 @@ int Viewer::render_ui()
                 });
 
                 m_grid.clear();
-                for (int h= 1; h < m_surface_degree; ++h)
+                for (int h= 1; h < m_nb_control_points_patch; ++h)
                 {
-                    for (int w= 1; w < m_surface_degree; ++w)
+                    for (int w= 1; w < m_nb_control_points_patch; ++w)
                     {
                         m_grid.vertex(surface[h][w-1]);
                         m_grid.vertex(surface[h][w]);
@@ -393,14 +407,15 @@ int Viewer::render_ui()
 
                 m_patch= gm::Bezier::create(surface);
                 std::chrono::high_resolution_clock::time_point start= std::chrono::high_resolution_clock::now();
-                m_mPatch= m_patch.polygonize(m_patch_resolution);
+                // m_mPatch= m_patch.polygonize(m_patch_resolution);
+                m_mTeapot= m_teapot.polygonize(m_patch_resolution);
                 std::chrono::high_resolution_clock::time_point stop= std::chrono::high_resolution_clock::now();
 
                 m_patch_time_polygonize= float(std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count());
 
-                Point pmin, pmax;
-                m_mPatch.bounds(pmin, pmax);
-                m_camera.lookat(pmin, pmax); 
+                // Point pmin, pmax;
+                // m_mPatch.bounds(pmin, pmax);
+                // m_camera.lookat(pmin, pmax); 
             }
         }
 
@@ -411,7 +426,7 @@ int Viewer::render_ui()
             ImGui::SliderInt("Resolution", &m_spline_resolution, 3, 1000);
             ImGui::PopID();
             ImGui::PushID(1);
-            ImGui::SliderInt("Curve degree", &m_curve_degree, 2, 31);
+            ImGui::SliderInt("#Control points", &m_nb_control_points_spline, 2, 31);
             ImGui::PopID();
             ImGui::Text("You can use a variable 't' in each expression below :");
             ImGui::PushID(1);
@@ -451,7 +466,7 @@ int Viewer::render_ui()
                 }
 
                 std::vector<Point> curve;  
-                curve = gm::curve_points(m_curve_degree, [&](double t_val) {
+                curve = gm::curve_points(m_nb_control_points_spline, [&](double t_val) {
                     set_double_variable_value(m_expr_spline, "t", t_val);
                     double x = get_evaluated_value(m_expr_spline, 0); 
                     double y = get_evaluated_value(m_expr_spline, 1); 
@@ -507,8 +522,10 @@ int Viewer::render_ui()
         if (m_show_patch)
         {
             ImGui::SeparatorText("Patch Geometry");
-            ImGui::Text("#Triangle : %i ", m_mPatch.triangle_count());
-            ImGui::Text("#Vertex : %i ", m_mPatch.vertex_count());
+            ImGui::Text("#Triangle : %i ", m_mTeapot.triangle_count());
+            // ImGui::Text("#Triangle : %i ", m_mPatch.triangle_count());
+            ImGui::Text("#Vertex : %i ", m_mTeapot.vertex_count());
+            // ImGui::Text("#Vertex : %i ", m_mPatch.vertex_count());
             ImGui::Text("#Control points : %i ", m_patch.point_count());
             ImGui::Text("Poligonize Time : %.2f ms", m_patch_time_polygonize);
         }

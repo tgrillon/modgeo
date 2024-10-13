@@ -1,21 +1,21 @@
-#include "implicit.h"
+// #include "implicit.h"
 
-float Implicit::Value(const Point &p) const
-{ 
-  return std::numeric_limits<float>::infinity(); 
-}
+// float Implicit::value(const Point &p) const
+// { 
+//   return std::numeric_limits<float>::infinity(); 
+// }
 
-bool Implicit::Inside(const Point &p) const
-{ 
-  return Value(p) < 0.f; 
-}
+// bool Implicit::inside(const Point &p) const
+// { 
+//   return value(p) < 0.f; 
+// }
 
-Point Implicit::Gradient(const Point &p) const
-{
-  return Point();
-}
+// Point Implicit::gradient(const Point &p) const
+// {
+//   return Point();
+// }
 
-bool Implicit::Intersect(const Ray &ray, float &t) const
-{
-  return false;
-}
+// bool Implicit::intersect(const Ray &ray, float &t) const
+// {
+//   return false;
+// }
