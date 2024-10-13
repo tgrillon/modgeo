@@ -1,24 +1,27 @@
 set(SOURCE_DIR "Source")
 set(INCLUDE_DIR "Include")
 add_executable(${PROJECT_NAME} main.cpp 
-                               ${SOURCE_DIR}/bezier.cpp
                                ${SOURCE_DIR}/Window.cpp
                                ${SOURCE_DIR}/App.cpp
                                ${SOURCE_DIR}/Framebuffer.cpp
                                ${SOURCE_DIR}/Viewer.cpp
+                               ${SOURCE_DIR}/Timer.cpp
+                               ${SOURCE_DIR}/vecext.cpp
+                               ${SOURCE_DIR}/bezier.cpp
                                ${SOURCE_DIR}/implicit.cpp
-                               ${SOURCE_DIR}/mathematic.cpp
                                ${SOURCE_DIR}/Box.cpp
                                ${SOURCE_DIR}/pch.cpp
-                               ${INCLUDE_DIR}/utils.h
-                               ${INCLUDE_DIR}/bezier.h
+
                                ${INCLUDE_DIR}/Window.h
                                ${INCLUDE_DIR}/App.h
                                ${INCLUDE_DIR}/Framebuffer.h
                                ${INCLUDE_DIR}/Viewer.h
-                               ${INCLUDE_DIR}/implicit.h
-                               ${INCLUDE_DIR}/mathematic.h
+                               ${INCLUDE_DIR}/Timer.h
+                               ${INCLUDE_DIR}/bezier.h
+                               ${INCLUDE_DIR}/vecext.h
                                ${INCLUDE_DIR}/Box.h
+                               ${INCLUDE_DIR}/implicit.h
+                               ${INCLUDE_DIR}/utils.h
                                ${INCLUDE_DIR}/pch.h
                                )
 

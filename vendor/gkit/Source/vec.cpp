@@ -4,8 +4,7 @@
 
 #include "vec.h"
 
-
-Point Origin( )
+Point Origin()
 {
     return Point(0, 0, 0);
 }

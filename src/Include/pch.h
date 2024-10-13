@@ -3,20 +3,20 @@
 #include <utility>
 #include <algorithm>
 #include <functional>
-
-#include <string>
 #include <sstream>
-#include <array>
-#include <set>
-#include <vector>
-#include <unordered_map>
-#include <unordered_set>
-
 #include <cmath>
 #include <ranges>
 #include <cassert>
 #include <chrono>
 #include <cstdio>
+
+// Data structures 
+#include <string>
+#include <array>
+#include <set>
+#include <vector>
+#include <unordered_map>
+#include <unordered_set>
 
 // ImGUI 
 #include "imgui.h"

@@ -9,6 +9,9 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
+find_package(SDL2 REQUIRED)
+find_package(GLEW REQUIRED)
+
 # Fetching gkit library 
 add_subdirectory(vendor/gkit)
 # Fetching imgui library 

@@ -59,6 +59,7 @@ struct Vector
 {
     //! constructeur par defaut.
     Vector( ) : x(0), y(0), z(0) {}
+    Vector( const float _v ) : x(_v), y(_v), z(_v) {}
     Vector( const float _x, const float _y, const float _z ) : x(_x), y(_y), z(_z) {}
     
     //! cree le vecteur ab.
@@ -73,7 +74,7 @@ struct Vector
     //! renvoie la ieme composante du vecteur.
     float operator() ( const unsigned int i ) const; // l'implementation se trouve en fin de fichier
     float& operator() ( const unsigned int i ); // l'implementation se trouve en fin de fichier
-    
+
     float x, y, z;
 };
 
@@ -124,7 +125,6 @@ Vector operator* ( const Vector& v, const float k );
 Vector operator* ( const Vector& a, const Vector& b );
 //! renvoie le vecteur v/k;
 Vector operator/ ( const Vector& v, const float k );
-
 
 //! vecteur generique, utilitaire.
 struct vec2
