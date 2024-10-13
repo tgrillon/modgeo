@@ -498,10 +498,10 @@ int Viewer::render_ui()
         if (m_show_spline)
         {
             ImGui::SeparatorText("Spline Geometry");
-            ImGui::Text("#Triangle : %i ", m_mSpline.triangle_count());
-            ImGui::Text("#Vertex : %i ", m_mSpline.vertex_count());
-            ImGui::Text("#Control points : %i ", m_spline.point_count());
-            ImGui::Text("Poligonize Time : %.2f ms", m_spline_time_polygonize);
+            // ImGui::Text("#Triangle : %i ", m_mSpline.triangle_count());
+            // ImGui::Text("#Vertex : %i ", m_mSpline.vertex_count());
+            // ImGui::Text("#Control points : %i ", m_spline.point_count());
+            // ImGui::Text("Poligonize Time : %.2f ms", m_spline_time_polygonize);
         }
         
         if (m_show_patch)
