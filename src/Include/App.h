@@ -33,6 +33,8 @@ protected:
     virtual int prerender();
     virtual int postrender();
 
+    void center_camera(const Mesh& mesh);
+
     std::pair<int, int> cpu_time() const { return {m_cpu_time / 1000, m_cpu_time % 1000}; }
     std::pair<int, int> gpu_time() const { return {int(m_frame_time / 1e6), int((m_frame_time / 1000) % 1000)}; }
 

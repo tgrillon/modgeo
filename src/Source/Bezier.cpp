@@ -1,4 +1,4 @@
-#include "bezier.h"
+#include "Bezier.h"
 
 #include <fstream>
 

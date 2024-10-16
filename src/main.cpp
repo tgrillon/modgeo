@@ -2,6 +2,6 @@
 
 int main()
 {
-  Viewer viewer; 
-  viewer.run();
+    Viewer viewer; 
+    viewer.run();
 }

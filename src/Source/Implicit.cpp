@@ -1,63 +1,166 @@
-#include "implicit.h"
+#include "Implicit.h"
 
 namespace gm
 {
-    Point Ray::point(double t)
+    const float ImplicitNode::s_epsilon = 1e-4;
+    const int ImplicitNode::s_limit = 1e4;
+
+    Point Ray::point(float t) const
     {
         return origin + direction * t;
     }
 
-    double Implicit::value(const Vector &p) const
+    /********************** Implicit Node ************************/
+
+    ImplicitNode::ImplicitNode(float lambda, IntersectMethod method) : m_intersect_method(method), m_lambda(lambda)
     {
-        return std::numeric_limits<float>::infinity();
     }
 
-    bool Implicit::inside(const Vector &p) const
+    float ImplicitNode::value(const Point &p) const
     {
-        return value(p) < 0.f;
+        return FLT_MAX;
     }
 
-    Vector Implicit::gradient(const Vector &p) const
+    bool ImplicitNode::inside(const Point &p) const
     {
-        return Vector();
+        return value(p) < 0.0;
     }
 
-    // bool Implicit::intersect(const Ray &ray, float &t) const
-    // {
-    //     return false;
-    // }
+    Vector ImplicitNode::gradient(const Point &p) const
+    {
+        //! finite difference solution
+        float x = value({p.x + s_epsilon, p.y, p.z}) - value({p.x - s_epsilon, p.y, p.z});
+        float y = value({p.x, p.y + s_epsilon, p.z}) - value({p.x, p.y - s_epsilon, p.z});
+        float z = value({p.x, p.y, p.z + s_epsilon}) - value({p.x, p.y, p.z - s_epsilon});
 
-    /************ Analytic Scalar Field ****************/
+        return Vector(x, y, z) * (0.5 / s_epsilon);
+    }
 
-    const double AnalyticScalarField::s_epsilon = 1e-6;
+    bool ImplicitNode::intersect(const Ray &ray, float t) const
+    {
+        switch (m_intersect_method)
+        {
+        case IntersectMethod::RAY_MARCHING:
+            return intersect_ray_marching(ray, t);
+        case IntersectMethod::SPHERE_TRACING:
+            return intersect_sphere_tracing(ray, t);
+        }
+
+        return false;
+    }
+
+    void ImplicitNode::intersect_method(IntersectMethod method)
+    {
+        m_intersect_method = method;
+    }
+
+    bool ImplicitNode::intersect_ray_marching(const Ray &ray, float eps) const
+    {
+        float t = 0.0;
+        Point point;
+        for (int i = 0; i < s_limit; ++i)
+        {
+            point = ray.point(t);
+            if (value(point) < 0.0)
+                return true;
+            t += eps;
+        }
+
+        return false;
+    }
+
+    bool ImplicitNode::intersect_sphere_tracing(const Ray &ray, float eps) const
+    {
+        float t = 0.0;
+        Point point;
+        for (int i = 0; i < s_limit; ++i)
+        {
+            point = ray.point(t);
+            float val = std::max(value(point), eps);
+            if (val < 0.0)
+                return true;
+            t += val / m_lambda;
+        }
+
+        return false;
+    }
+
+    /********************** Implicit Binary Operator ************************/
+
+    ImplicitBinaryOperator::ImplicitBinaryOperator(const Ref<ImplicitNode> &left, const Ref<ImplicitNode> &right) : m_left(left), m_right(right)
+    {
+    }
+
+    /*************************** Implicit Union *****************************/
+
+    ImplicitUnion::ImplicitUnion(const Ref<ImplicitNode> &left, const Ref<ImplicitNode> &right) : ImplicitBinaryOperator(left, right)
+    {
+    }
+
+    Ref<ImplicitUnion> ImplicitUnion::create(const Ref<ImplicitNode> &l, const Ref<ImplicitNode> &r)
+    {
+        return std::make_shared<ImplicitUnion>(l, r);
+    }
+
+    float ImplicitUnion::value(const Point &p) const
+    {
+        return std::min(m_left->value(p), m_right->value(p));
+    }
+
+    ImplicitType ImplicitUnion::type() const
+    {
+        return ImplicitType::BINARY_OPERATOR_UNION;
+    }
+
+    /************************** Implicit Sphere ****************************/
+
+    ImplicitSphere::ImplicitSphere(const Point &c, float r, float l, IntersectMethod im) : ImplicitNode(l, im), m_center(c), m_radius(r)
+    {
+    }
+
+    Ref<ImplicitSphere> ImplicitSphere::create(const Point &c, float r, float l, IntersectMethod im)
+    {
+        return std::make_shared<ImplicitSphere>(c, r, l, im);
+    }
+
+    float ImplicitSphere::value(const Point &p) const
+    {
+        Vector cp(m_center, p);
+        return length(cp) - m_radius;
+    }
+
+    ImplicitType ImplicitSphere::type() const
+    {
+        return ImplicitType::PRIMITIVE_SPHERE;
+    }
+
+    /************************** Implicit Tree ******************************/
+
+    ImplicitTree::ImplicitTree(const Ref<ImplicitNode> &root, float l, IntersectMethod im) : ImplicitNode(l, im), m_root(root)
+    {
+    }
+
+    Ref<ImplicitTree> ImplicitTree::create(const Ref<ImplicitNode> &root, float l, IntersectMethod im)
+    {
+        return std::make_shared<ImplicitTree>(root, l, im);
+    }
+
+    float ImplicitTree::value(const Point &p) const
+    {
+        return m_root->value(p);
+    }
 
     /*!
-    \brief Constructor.
-    */
-    AnalyticScalarField::AnalyticScalarField()
-    {
-    }
+        \brief Compute the polygonal mesh approximating the implicit surface.
 
-    /*!
-    \brief Compute the value of the field.
-    \param p Point.
-    */
-    double AnalyticScalarField::value(const Vector &p) const
+        \param box %Box defining the region that will be polygonized.
+        \param n Discretization parameter.
+        \param g Returned geometry.
+        \param s_epsilon Epsilon value for computing vertices on straddling edges.
+        */
+    Mesh ImplicitTree::polygonize(int n, const Box &box, const float &s_epsilon) const
     {
-        return length(p) - 1.0;
-    }
-
-    /*!
-    \brief Compute the polygonal mesh approximating the implicit surface.
-
-    \param box %Box defining the region that will be polygonized.
-    \param n Discretization parameter.
-    \param g Returned geometry.
-    \param s_epsilon Epsilon value for computing vertices on straddling edges.
-    */
-    Mesh AnalyticScalarField::polygonize(int n, const Box &box, const double &s_epsilon) const
-    {
-        Mesh mesh;
+        Mesh mesh(GL_TRIANGLES);
 
         int nv = 0;
         const int nx = n;
@@ -77,8 +180,8 @@ namespace gm
         const int size = nx * ny;
 
         // Intensities
-        double *a = new double[size];
-        double *b = new double[size];
+        float *a = new float[size];
+        float *b = new float[size];
 
         // vertex
         Vector *u = new Vector[size];
@@ -94,7 +197,7 @@ namespace gm
         // diagonal of a cell
         Vector d = clipped.diagonal() / (n - 1);
 
-        double za = 0.0;
+        float za = 0.0;
 
         // Compute field inside lower Oxy plane
         for (int i = nax; i < nbx; i++)
@@ -102,7 +205,7 @@ namespace gm
             for (int j = nay; j < nby; j++)
             {
                 u[i * ny + j] = clipped[0] + Vector(i * d(0), j * d(1), za);
-                a[i * ny + j] = value(u[i * ny + j]);
+                a[i * ny + j] = value(Point(u[i * ny + j]));
             }
         }
 
@@ -143,13 +246,13 @@ namespace gm
         // For all layers
         for (int k = naz; k < nbz; k++)
         {
-            double zb = za + d(2);
+            float zb = za + d(2);
             for (int i = nax; i < nbx; i++)
             {
                 for (int j = nay; j < nby; j++)
                 {
                     v[i * ny + j] = clipped[0] + Vector(i * d(0), j * d(1), zb);
-                    b[i * ny + j] = value(v[i * ny + j]);
+                    b[i * ny + j] = value(Point(v[i * ny + j]));
                 }
             }
 
@@ -281,7 +384,7 @@ namespace gm
     \param s_epsilon Precision.
     \return Point on the implicit surface.
     */
-    Vector AnalyticScalarField::dichotomy(Vector a, Vector b, double va, double vb, double length, const double &s_epsilon) const
+    Vector ImplicitTree::dichotomy(Vector a, Vector b, float va, float vb, float length, const float &s_epsilon) const
     {
         int ia = va > 0.0 ? 1 : -1;
 
@@ -290,7 +393,7 @@ namespace gm
 
         while (length > s_epsilon)
         {
-            double vc = value(c);
+            float vc = value(Point(c));
             int ic = vc > 0.0 ? 1 : -1;
             if (ia + ic == 0)
             {
@@ -307,34 +410,26 @@ namespace gm
         return c;
     }
 
-    /*!
-    \brief Compute the gradient of the field.
-    \param p Point.
-    */
-    Vector AnalyticScalarField::gradient(const Vector &p) const
+    ImplicitType ImplicitTree::type() const
     {
-        double x = value(Vector(p(0) + s_epsilon, p(1), p(2))) - value(Vector(p(0) - s_epsilon, p(1), p(2)));
-        double y = value(Vector(p(0), p(1) + s_epsilon, p(2))) - value(Vector(p(0), p(1) - s_epsilon, p(2)));
-        double z = value(Vector(p(0), p(1), p(2) + s_epsilon)) - value(Vector(p(0), p(1), p(2) - s_epsilon));
-
-        return Vector(x, y, z) * (0.5 / s_epsilon);
+        return ImplicitType::TREE;
     }
 
     /*!
     \brief Compute the normal to the surface.
 
-    \sa AnalyticScalarField::gradient(const Vector&) const
+    \sa ImplicitTree::gradient(const Vector&) const
 
     \param p Point (should be on the surface).
     */
-    Vector AnalyticScalarField::normal(const Vector &p) const
+    Vector ImplicitTree::normal(const Vector &p) const
     {
-        Vector normal = normalize(gradient(p));
+        Vector normal = normalize(gradient(Point(p)));
 
         return normal;
     }
 
-    int AnalyticScalarField::m_edge_table[256] = {
+    int ImplicitTree::m_edge_table[256] = {
         0, 273, 545, 816, 1042, 1283, 1587, 1826, 2082, 2355, 2563, 2834, 3120, 3361, 3601, 3840,
         324, 85, 869, 628, 1366, 1095, 1911, 1638, 2406, 2167, 2887, 2646, 3444, 3173, 3925, 3652,
         644, 917, 165, 436, 1686, 1927, 1207, 1446, 2726, 2999, 2183, 2454, 3764, 4005, 3221, 3460,
@@ -352,7 +447,7 @@ namespace gm
         3652, 3925, 3173, 3444, 2646, 2887, 2167, 2406, 1638, 1911, 1095, 1366, 628, 869, 85, 324,
         3840, 3601, 3361, 3120, 2834, 2563, 2355, 2082, 1826, 1587, 1283, 1042, 816, 545, 273, 0};
 
-    int AnalyticScalarField::m_triangle_table[256][16] = {
+    int ImplicitTree::m_triangle_table[256][16] = {
         {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
         {0, 8, 4, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
         {0, 5, 9, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
@@ -609,4 +704,5 @@ namespace gm
         {0, 9, 5, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
         {0, 4, 8, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
         {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}};
+
 } // namespace gm
