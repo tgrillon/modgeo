@@ -2,6 +2,15 @@
 
 #include "pch.h"
 
+template<typename T>
+using Ref = std::shared_ptr<T>;
+
+template<typename T, typename ... Args>
+constexpr Ref<T> create_ref(Args&& ... args)
+{
+    return std::make_shared<T>(std::forward<Args>(args)...);
+}
+
 namespace utils
 {
     // Thanks to https://medium.com/@batteriesnotincludeddev/indexed-for-each-in-modern-c-7df21fce72a1

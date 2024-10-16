@@ -3,6 +3,7 @@
 #include "pch.h"
 
 #include "Box.h"
+#include "utils.h"
 
 /*
 SDF point -> line AB
@@ -11,9 +12,6 @@ h= min(1, max(0, dot(ap, ab)/dot(ab, ab)))
 d= length(P - A - h * ab)
 
 */
-
-template<typename T>
-using Ref = std::shared_ptr<T>;
 
 namespace gm
 {
@@ -210,7 +208,7 @@ namespace gm
         
         ImplicitType type() const override;
 
-        Mesh polygonize(int resolution, const Box& box) const;
+        Ref<Mesh> polygonize(int resolution, const Box& box) const;
         Vector normal(const Vector &) const;
         Vector dichotomy(Vector, Vector, float, float, float) const;
 

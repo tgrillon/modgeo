@@ -63,16 +63,16 @@ int Viewer::init_any()
     curve = gm::curve_points(m_nb_control_points_spline, [](double t)
                              { return Point(10 * t, 0, 0); });
 
-    m_line = Mesh(GL_LINE_STRIP);
+    m_line = create_ref<Mesh>(GL_LINE_STRIP);
     for (const auto &p : curve)
     {
-        m_line.vertex(p);
+        m_line->vertex(p);
     }
 
     m_spline = gm::Revolution::create(curve);
 
     m_timer.start();
-    m_mSpline = m_spline.polygonize(4);
+    m_mSpline = m_spline->polygonize(4);
     m_timer.stop();
 
     m_spolytms = m_timer.ms();
@@ -80,7 +80,7 @@ int Viewer::init_any()
 
     if (m_patch_demo)
     {
-        center_camera(m_mPatch);
+        center_camera(*m_mPatch);
     }
 
     //! Bezier patch intialization
@@ -89,23 +89,23 @@ int Viewer::init_any()
     surface = gm::surface_points(m_nb_control_points_patch, [](double u, double v)
                                  { return Point(u * 10., sin(10 * v * 2 * M_PI), v * 10); });
 
-    m_grid = Mesh(GL_LINES);
+    m_grid = create_ref<Mesh>(GL_LINES);
     for (int h = 1; h < m_nb_control_points_patch; ++h)
     {
         for (int w = 1; w < m_nb_control_points_patch; ++w)
         {
-            m_grid.vertex(surface[h][w - 1]);
-            m_grid.vertex(surface[h][w]);
+            m_grid->vertex(surface[h][w - 1]);
+            m_grid->vertex(surface[h][w]);
 
-            m_grid.vertex(surface[h - 1][w]);
-            m_grid.vertex(surface[h][w]);
+            m_grid->vertex(surface[h - 1][w]);
+            m_grid->vertex(surface[h][w]);
         }
     }
 
     m_patch = gm::Bezier::create(surface);
 
     m_timer.start();
-    m_mPatch = m_patch.polygonize(m_patch_resolution);
+    m_mPatch = m_patch->polygonize(m_patch_resolution);
     m_timer.stop();
 
     m_ppolytms = m_timer.ms();
@@ -113,7 +113,7 @@ int Viewer::init_any()
 
     if (m_spline_demo)
     {
-        center_camera(m_mSpline);
+        center_camera(*m_mSpline);
     }
 
     //! Implicit surface initialization
@@ -132,7 +132,7 @@ int Viewer::init_any()
 
     if (m_implicit_demo)
     {
-        center_camera(m_mImplicit_box);
+        center_camera(*m_mImplicit_box);
     }
 
     m_mImplicit_box = m_imp_box.get_box(m_implicit_resolution, m_slide_x, m_slide_y, m_slide_z);
@@ -216,11 +216,11 @@ int Viewer::render()
 
 int Viewer::quit_any()
 {
-    m_grid.release();
-    m_mPatch.release();
-    m_mSpline.release();
-    m_mTeapot.release();
-    m_mImplicit.release();
+    m_grid->release();
+    m_mPatch->release();
+    m_mSpline->release();
+    // m_mTeapot->release();
+    m_mImplicit->release();
 
     return 0;
 }
@@ -256,7 +256,7 @@ int Viewer::render_any()
             glEnable(GL_POLYGON_OFFSET_FILL);
             glPolygonOffset(1.0, 1.0);
             glDepthFunc(GL_LESS);
-            param.draw(m_mSpline);
+            param.draw(*m_mSpline);
             glDisable(GL_POLYGON_OFFSET_FILL);
         }
 
@@ -269,7 +269,7 @@ int Viewer::render_any()
             GLint location = glGetUniformLocation(m_program_edges, "uEdgeColor");
             glUniform4fv(location, 1, &m_color_edge[0]);
 
-            m_mSpline.draw(m_program_edges, true, false, false, false, false);
+            m_mSpline->draw(m_program_edges, true, false, false, false, false);
         }
 
         if (m_show_points_spline)
@@ -281,12 +281,12 @@ int Viewer::render_any()
             GLint location = glGetUniformLocation(m_program_points, "uPointColor");
             glUniform4fv(location, 1, &m_color_point[0]);
 
-            glDrawArrays(GL_POINTS, 0, m_mSpline.vertex_count());
+            glDrawArrays(GL_POINTS, 0, m_mSpline->vertex_count());
         } 
 
         if (m_show_spline_curve)
         {
-            param.draw(m_line);
+            param.draw(*m_line);
         }
     }
     else if (m_patch_demo)
@@ -296,7 +296,7 @@ int Viewer::render_any()
             glEnable(GL_POLYGON_OFFSET_FILL);
             glPolygonOffset(1.0, 1.0);
             glDepthFunc(GL_LESS);
-            param.draw(m_mPatch);
+            param.draw(*m_mPatch);
             glDisable(GL_POLYGON_OFFSET_FILL);
         }
 
@@ -309,7 +309,7 @@ int Viewer::render_any()
             GLint location = glGetUniformLocation(m_program_edges, "uEdgeColor");
             glUniform4fv(location, 1, &m_color_edge[0]);
 
-            m_mPatch.draw(m_program_edges, true, false, false, false, false);
+            m_mPatch->draw(m_program_edges, true, false, false, false, false);
         }
 
         if (m_show_points_patch)
@@ -321,14 +321,14 @@ int Viewer::render_any()
             GLint location = glGetUniformLocation(m_program_points, "uPointColor");
             glUniform4fv(location, 1, &m_color_point[0]);
 
-            glDrawArrays(GL_POINTS, 0, m_mPatch.vertex_count());
+            glDrawArrays(GL_POINTS, 0, m_mPatch->vertex_count());
         }    
 
         if (m_show_patch_grid)
         {
-            param.draw(m_grid);
+            param.draw(*m_grid);
         }
-        // param.draw(m_mTeapot);
+        // param.draw(*m_mTeapot);
     }
     else if (m_implicit_demo)
     {
@@ -337,7 +337,7 @@ int Viewer::render_any()
             glEnable(GL_POLYGON_OFFSET_FILL);
             glPolygonOffset(1.0, 1.0);
             glDepthFunc(GL_LESS);
-            param.draw(m_mImplicit);
+            param.draw(*m_mImplicit);
             glDisable(GL_POLYGON_OFFSET_FILL);
         }
 
@@ -350,7 +350,7 @@ int Viewer::render_any()
             GLint location = glGetUniformLocation(m_program_edges, "uEdgeColor");
             glUniform4fv(location, 1, &m_color_edge[0]);
 
-            m_mImplicit.draw(m_program_edges, true, false, false, false, false);
+            m_mImplicit->draw(m_program_edges, true, false, false, false, false);
         }
 
         if (m_show_points_implicit)
@@ -362,12 +362,12 @@ int Viewer::render_any()
             GLint location = glGetUniformLocation(m_program_points, "uPointColor");
             glUniform4fv(location, 1, &m_color_point[0]);
 
-            glDrawArrays(GL_POINTS, 0, m_mImplicit.vertex_count());
+            glDrawArrays(GL_POINTS, 0, m_mImplicit->vertex_count());
         }    
         
         if (m_show_implicit_box)
         {
-            param.draw(m_mImplicit_box);
+            param.draw(*m_mImplicit_box);
         }
     }
 
@@ -469,7 +469,7 @@ int Viewer::render_demo_buttons()
         m_spline_demo = true;
         m_implicit_demo = false;
 
-        center_camera(m_mSpline);
+        center_camera(*m_mSpline);
     }
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip))
     {
@@ -485,7 +485,7 @@ int Viewer::render_demo_buttons()
         m_spline_demo = false;
         m_implicit_demo = false;
 
-        center_camera(m_mPatch);
+        center_camera(*m_mPatch);
     }
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip))
     {
@@ -501,7 +501,7 @@ int Viewer::render_demo_buttons()
         m_spline_demo = false;
         m_implicit_demo = true;
 
-        center_camera(m_mImplicit_box);
+        center_camera(*m_mImplicit_box);
     }
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip))
     {
@@ -516,11 +516,11 @@ int Viewer::render_patch_stats()
 {
     //! Statistiques
     ImGui::SeparatorText("Patch Geometry");
-    ImGui::Text("#Triangle : %i ", m_mTeapot.triangle_count());
-    // ImGui::Text("#Triangle : %i ", m_mPatch.triangle_count());
-    ImGui::Text("#vertex : %i ", m_mTeapot.vertex_count());
-    // ImGui::Text("#vertex : %i ", m_mPatch.vertex_count());
-    ImGui::Text("#Control points : %i ", m_patch.point_count());
+    // ImGui::Text("#Triangle : %i ", m_mTeapot->triangle_count());
+    ImGui::Text("#Triangle : %i ", m_mPatch->triangle_count());
+    // ImGui::Text("#vertex : %i ", m_mTeapot->vertex_count());
+    ImGui::Text("#vertex : %i ", m_mPatch->vertex_count());
+    ImGui::Text("#Control points : %i ", m_patch->point_count());
     ImGui::Text("Poligonize Time : %i ms %i us", m_ppolytms, m_ppolytus);
 
     return 0;
@@ -568,30 +568,30 @@ int Viewer::render_patch_params()
                     double z= get_evaluated_value(m_expr_patch, 2); 
                     return Point(x, y, z); });
 
-        m_grid.clear();
+        m_grid->clear();
         for (int h = 1; h < m_nb_control_points_patch; ++h)
         {
             for (int w = 1; w < m_nb_control_points_patch; ++w)
             {
-                m_grid.vertex(surface[h][w - 1]);
-                m_grid.vertex(surface[h][w]);
+                m_grid->vertex(surface[h][w - 1]);
+                m_grid->vertex(surface[h][w]);
 
-                m_grid.vertex(surface[h - 1][w]);
-                m_grid.vertex(surface[h][w]);
+                m_grid->vertex(surface[h - 1][w]);
+                m_grid->vertex(surface[h][w]);
             }
         }
 
         m_patch = gm::Bezier::create(surface);
 
         m_timer.start();
-        m_mPatch = m_patch.polygonize(m_patch_resolution);
+        m_mPatch = m_patch->polygonize(m_patch_resolution);
         // m_mTeapot = m_teapot.polygonize(m_patch_resolution);
         m_timer.stop();
 
         m_ppolytms = m_timer.ms();
         m_ppolytus = m_timer.us();
 
-        center_camera(m_mPatch);
+        center_camera(*m_mPatch);
     }
 
     return 0;
@@ -600,9 +600,9 @@ int Viewer::render_patch_params()
 int Viewer::render_spline_stats()
 {
     ImGui::SeparatorText("Spline Geometry");
-    ImGui::Text("#Triangle : %i ", m_mSpline.triangle_count());
-    ImGui::Text("#vertex : %i ", m_mSpline.vertex_count());
-    ImGui::Text("#Control points : %i ", m_spline.point_count());
+    ImGui::Text("#Triangle : %i ", m_mSpline->triangle_count());
+    ImGui::Text("#vertex : %i ", m_mSpline->vertex_count());
+    ImGui::Text("#Control points : %i ", m_spline->point_count());
     ImGui::Text("Poligonize Time : %i ms %i us", m_spolytms, m_spolytus);
 
     return 0;
@@ -650,27 +650,27 @@ int Viewer::render_spline_params()
                     double z= get_evaluated_value(m_expr_spline, 2); 
                     return Point(x, y, z); });
 
-        m_line.clear();
+        m_line->clear();
         for (const auto &p : curve)
         {
-            m_line.vertex(p);
+            m_line->vertex(p);
         }
 
         m_spline = gm::Revolution::create(curve);
-        m_spline.radial_fun([&](double t_val, double a_val)
+        m_spline->radial_fun([&](double t_val, double a_val)
                             {
                         set_double_variable_value(m_expr_spline, "t", t_val);
                         set_double_variable_value(m_expr_spline, "a", a_val);
                         return get_evaluated_value(m_expr_spline, 3); });
 
         m_timer.start();
-        m_mSpline = m_spline.polygonize(m_spline_resolution);
+        m_mSpline = m_spline->polygonize(m_spline_resolution);
         m_timer.stop();
 
         m_spolytms = m_timer.ms();
         m_spolytus = m_timer.us();
 
-        center_camera(m_mSpline);
+        center_camera(*m_mSpline);
     }
 
     return 0;
@@ -679,8 +679,8 @@ int Viewer::render_spline_params()
 int Viewer::render_implicit_stats()
 {
     ImGui::SeparatorText("Spline Geometry");
-    ImGui::Text("#Triangle : %i ", m_mImplicit.triangle_count());
-    ImGui::Text("#vertex : %i ", m_mImplicit.vertex_count());
+    ImGui::Text("#Triangle : %i ", m_mImplicit->triangle_count());
+    ImGui::Text("#vertex : %i ", m_mImplicit->vertex_count());
     ImGui::Text("Poligonize Time : %i ms %i us", m_ipolytms, m_ipolytus);
     return 0;
 }
@@ -731,7 +731,7 @@ int Viewer::render_implicit_params()
         m_ipolytms = m_timer.ms();
         m_ipolytus = m_timer.us();
 
-        center_camera(m_mImplicit_box);
+        center_camera(*m_mImplicit_box);
     }
 
     return 0;

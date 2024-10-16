@@ -172,9 +172,9 @@ Vector m_b=box[1]; // Opposite vertex
         }
     }
 
-    Mesh Box::get_box(int resolution, int slide_x, int slide_y, int slide_z) const
+    Ref<Mesh> Box::get_box(int resolution, int slide_x, int slide_y, int slide_z) const
     {
-        Mesh mesh(GL_LINES);
+        Ref<Mesh> mesh = create_ref<Mesh>(GL_LINES);
 
         get_grid(mesh, resolution, slide_x, 4, 0, 6, 2, 5, 1, 7, 3);
         get_grid(mesh, resolution, slide_y, 2, 3, 6, 7, 0, 1, 4, 5);
@@ -183,7 +183,7 @@ Vector m_b=box[1]; // Opposite vertex
         return mesh;
     }
     
-    void Box::get_grid(Mesh &mesh, int n, int s, int _a, int _b, int _c, int _d, int _e, int _f, int _g, int _h) const
+    void Box::get_grid(Ref<Mesh> mesh, int n, int s, int _a, int _b, int _c, int _d, int _e, int _f, int _g, int _h) const
     {
         Point a = Point(vertex(_a));
         Point b = Point(vertex(_b));
@@ -210,14 +210,14 @@ Vector m_b=box[1]; // Opposite vertex
         for (int i = 0; i <= n; ++i)
         {
             float istep = i * step; 
-            mesh.vertex(a + istep * ab);
-            mesh.vertex(c + istep * cd);
+            mesh->vertex(a + istep * ab);
+            mesh->vertex(c + istep * cd);
 
             for (int j = 0; j <= n; ++j)
             {
                 float jstep = j * step; 
-                mesh.vertex(a + jstep * ac);
-                mesh.vertex(b + jstep * bd);
+                mesh->vertex(a + jstep * ac);
+                mesh->vertex(b + jstep * bd);
             }
         }
     }

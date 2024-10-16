@@ -35,21 +35,21 @@ private:
     int render_menu_bar();
 
 private:
-    Mesh m_grid; //! bezier grid 
-    Mesh m_line; //! bezier curve
-    Mesh m_mSpline; //! bezier spline mesh 
-    Mesh m_mPatch; //! bezier patch mesh
-    Mesh m_mTeapot;
-    Mesh m_mImplicit; //! implicit surface mesh 
-    Mesh m_mImplicit_box;
+    Ref<Mesh> m_grid; //! bezier grid 
+    Ref<Mesh> m_line; //! bezier curve
+    Ref<Mesh> m_mSpline; //! bezier spline mesh 
+    Ref<Mesh> m_mPatch; //! bezier patch mesh
+    Ref<Mesh> m_mTeapot;
+    Ref<Mesh> m_mImplicit; //! implicit surface mesh 
+    Ref<Mesh> m_mImplicit_box;
 
     GLuint m_program_points; 
     GLuint m_program_edges; 
 
-    gm::Revolution m_spline;
-    gm::Bezier m_patch;
+    Ref<gm::Revolution> m_spline;
+    Ref<gm::Bezier> m_patch;
 
-    gm::Object m_teapot;
+    Ref<gm::Object> m_teapot;
 
     Framebuffer m_framebuffer;
 

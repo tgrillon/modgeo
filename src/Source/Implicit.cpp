@@ -99,7 +99,7 @@ namespace gm
 
     Ref<ImplicitHull> ImplicitHull::create(const Ref<ImplicitNode> &n, float thickness)
     {
-        return std::make_shared<ImplicitHull>(n, thickness);
+        return create_ref<ImplicitHull>(n, thickness);
     }
 
     float ImplicitHull::value(const Point &p) const
@@ -126,7 +126,7 @@ namespace gm
 
     Ref<ImplicitUnion> ImplicitUnion::create(const Ref<ImplicitNode> &l, const Ref<ImplicitNode> &r)
     {
-        return std::make_shared<ImplicitUnion>(l, r);
+        return create_ref<ImplicitUnion>(l, r);
     }
 
     float ImplicitUnion::value(const Point &p) const
@@ -147,7 +147,7 @@ namespace gm
 
     Ref<ImplicitIntersection> ImplicitIntersection::create(const Ref<ImplicitNode> &l, const Ref<ImplicitNode> &r)
     {
-        return std::make_shared<ImplicitIntersection>(l, r);
+        return create_ref<ImplicitIntersection>(l, r);
     }
 
     float ImplicitIntersection::value(const Point &p) const
@@ -168,7 +168,7 @@ namespace gm
 
     Ref<ImplicitDifference> ImplicitDifference::create(const Ref<ImplicitNode> &l, const Ref<ImplicitNode> &r)
     {
-        return std::make_shared<ImplicitDifference>(l, r);
+        return create_ref<ImplicitDifference>(l, r);
     }
 
     float ImplicitDifference::value(const Point &p) const
@@ -189,7 +189,7 @@ namespace gm
 
     Ref<ImplicitSphere> ImplicitSphere::create(const Point &c, float r, float l, IntersectMethod im)
     {
-        return std::make_shared<ImplicitSphere>(c, r, l, im);
+        return create_ref<ImplicitSphere>(c, r, l, im);
     }
 
     float ImplicitSphere::value(const Point &p) const
@@ -211,7 +211,7 @@ namespace gm
 
     Ref<ImplicitBox> ImplicitBox::create(const Point &a, const Point &b, float l, IntersectMethod im)
     {
-        return std::make_shared<ImplicitBox>(a, b, l, im);
+        return create_ref<ImplicitBox>(a, b, l, im);
     }
 
     float ImplicitBox::value(const Point &p) const
@@ -233,7 +233,7 @@ namespace gm
 
     Ref<ImplicitTree> ImplicitTree::create(const Ref<ImplicitNode> &root, float l, IntersectMethod im)
     {
-        return std::make_shared<ImplicitTree>(root, l, im);
+        return create_ref<ImplicitTree>(root, l, im);
     }
 
     float ImplicitTree::value(const Point &p) const
@@ -249,9 +249,9 @@ namespace gm
         \param g Returned geometry.
         \param s_epsilon Epsilon value for computing vertices on straddling edges.
         */
-    Mesh ImplicitTree::polygonize(int n, const Box &box) const
+    Ref<Mesh> ImplicitTree::polygonize(int n, const Box &box) const
     {
-        Mesh mesh(GL_TRIANGLES);
+        Ref<Mesh> mesh = create_ref<Mesh>(GL_TRIANGLES);
 
         int nv = 0;
         const int nx = n;
@@ -309,8 +309,8 @@ namespace gm
                 if (!((a[i * ny + j] < 0.0) == !(a[(i + 1) * ny + j] >= 0.0)))
                 {
                     auto vertex = dichotomy(u[i * ny + j], u[(i + 1) * ny + j], a[i * ny + j], a[(i + 1) * ny + j], d(0));
-                    mesh.vertex(vertex);
-                    mesh.normal(normal(vertex));
+                    mesh->vertex(vertex);
+                    mesh->normal(normal(vertex));
                     eax[i * ny + j] = nv;
                     nv++;
                 }
@@ -323,8 +323,8 @@ namespace gm
                 if (!((a[i * ny + j] < 0.0) == !(a[i * ny + (j + 1)] >= 0.0)))
                 {
                     auto vertex = dichotomy(u[i * ny + j], u[i * ny + (j + 1)], a[i * ny + j], a[i * ny + (j + 1)], d(1));
-                    mesh.vertex(vertex);
-                    mesh.normal(normal(vertex));
+                    mesh->vertex(vertex);
+                    mesh->normal(normal(vertex));
                     eay[i * ny + j] = nv;
                     nv++;
                 }
@@ -356,8 +356,8 @@ namespace gm
                     if (!((b[i * ny + j] < 0.0) == !(b[(i + 1) * ny + j] >= 0.0)))
                     {
                         auto vertex = dichotomy(v[i * ny + j], v[(i + 1) * ny + j], b[i * ny + j], b[(i + 1) * ny + j], d(0));
-                        mesh.vertex(vertex);
-                        mesh.normal(normal(vertex));
+                        mesh->vertex(vertex);
+                        mesh->normal(normal(vertex));
                         ebx[i * ny + j] = nv;
                         nv++;
                     }
@@ -372,8 +372,8 @@ namespace gm
                     if (!((b[i * ny + j] < 0.0) == !(b[i * ny + (j + 1)] >= 0.0)))
                     {
                         auto vertex = dichotomy(v[i * ny + j], v[i * ny + (j + 1)], b[i * ny + j], b[i * ny + (j + 1)], d(1));
-                        mesh.vertex(vertex);
-                        mesh.normal(normal(vertex));
+                        mesh->vertex(vertex);
+                        mesh->normal(normal(vertex));
                         eby[i * ny + j] = nv;
                         nv++;
                     }
@@ -389,8 +389,8 @@ namespace gm
                     if (!((a[i * ny + j] < 0.0) == !(b[i * ny + j] >= 0.0)))
                     {
                         auto vertex = dichotomy(u[i * ny + j], v[i * ny + j], a[i * ny + j], b[i * ny + j], d(2));
-                        mesh.vertex(vertex);
-                        mesh.normal(normal(vertex));
+                        mesh->vertex(vertex);
+                        mesh->normal(normal(vertex));
                         ez[i * ny + j] = nv;
                         nv++;
                     }
@@ -438,7 +438,7 @@ namespace gm
 
                         for (int h = 0; m_triangle_table[cubeindex][h] != -1; h += 3)
                         {
-                            mesh.triangle(e[m_triangle_table[cubeindex][h]], e[m_triangle_table[cubeindex][h + 1]], e[m_triangle_table[cubeindex][h + 2]]);
+                            mesh->triangle(e[m_triangle_table[cubeindex][h]], e[m_triangle_table[cubeindex][h + 1]], e[m_triangle_table[cubeindex][h + 2]]);
                         }
                     }
                 }

@@ -5,6 +5,7 @@
 #include "pch.h"
 
 #include "vecext.h"
+#include "utils.h"
 
 namespace gm
 {
@@ -56,12 +57,12 @@ namespace gm
         void translate(const Vector &);
         void scale(float);
 
-        Mesh get_box(int resolution = 1, int slide_x = 0, int slide_y = 0, int slide_z = 0) const;
+        Ref<Mesh> get_box(int resolution = 1, int slide_x = 0, int slide_y = 0, int slide_z = 0) const;
 
         friend std::ostream &operator<<(std::ostream &, const Box &);
 
     private: 
-        void get_grid(Mesh& mesh, int n, int s, int a, int b, int c, int d, int e, int f, int g, int h) const; 
+        void get_grid(Ref<Mesh> mesh, int n, int s, int a, int b, int c, int d, int e, int f, int g, int h) const; 
 
     protected:
         Vector m_a, m_b; //!< Lower and upper vertex.

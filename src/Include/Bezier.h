@@ -53,9 +53,9 @@ namespace gm
     Bezier();
     Bezier(const std::vector<std::vector<Point>> &points);
 
-    static Bezier create(const std::vector<std::vector<Point>> &points);
+    static Ref<Bezier> create(const std::vector<std::vector<Point>> &points);
 
-    Mesh polygonize(int resolution = 10) const;
+    Ref<Mesh> polygonize(int resolution = 10) const;
 
     int height() const;
     int width() const;
@@ -72,14 +72,14 @@ namespace gm
   {
   public:
     Object() = default;
-    Object(const std::vector<Bezier> &patches);
+    Object(const std::vector<Ref<Bezier>> &patches);
 
     void load_pacthes(const std::string &filename);
 
-    Mesh polygonize(int resolution) const;
+    Ref<Mesh> polygonize(int resolution) const;
 
   private:
-    std::vector<Bezier> m_patches{};
+    std::vector<Ref<Bezier>> m_patches{};
   };
 
   class Curve
@@ -110,7 +110,7 @@ namespace gm
     Spline();
     Spline(const std::vector<Point> &points, Type type = Type::BEZIER);
 
-    static Spline create(const std::vector<Point> &points, Type type = Type::BEZIER);
+    static Ref<Spline> create(const std::vector<Point> &points, Type type = Type::BEZIER);
 
     int point_count() const;
 
@@ -134,9 +134,9 @@ namespace gm
     Revolution() = default;
     Revolution(const std::vector<Point> &points, Type type = Type::BEZIER);
 
-    static Revolution create(const std::vector<Point> &points, Type type = Type::BEZIER);
+    static Ref<Revolution> create(const std::vector<Point> &points, Type type = Type::BEZIER);
 
-    Mesh polygonize(int resolution) const;
+    Ref<Mesh> polygonize(int resolution) const;
 
     Point point(double u, double v) const;
 

@@ -6,7 +6,7 @@ namespace gm
 {
     /******************* OBJECT *******************/
 
-    Object::Object(const std::vector<Bezier> &patches) : m_patches(patches)
+    Object::Object(const std::vector<Ref<Bezier>> &patches) : m_patches(patches)
     {
     }
 
@@ -44,8 +44,9 @@ namespace gm
             positions[i] = {x, y, z};
         }
 
+        m_patches.resize(indices.size() / 16);
+
         // Generate control points
-        std::vector<Bezier> ret;
         for (int i = 0; i < indices.size(); i += 16)
         {
             std::vector<std::vector<Point>> points;
@@ -62,13 +63,13 @@ namespace gm
                 points.emplace_back(pts);
             }
 
-            m_patches.emplace_back(points);
+            m_patches[i % 15] = Bezier::create(points);
         }
     }
 
-    Mesh Object::polygonize(int n) const
+    Ref<Mesh> Object::polygonize(int n) const
     {
-        Mesh mesh(GL_TRIANGLES);
+        Ref<Mesh> mesh = create_ref<Mesh>(GL_TRIANGLES);
         double step = 1.0 / (n - 1);
 
         for (int k = 0; k < m_patches.size(); ++k)
@@ -79,8 +80,8 @@ namespace gm
                 for (int j = 0; j < n; ++j)
                 {
                     double v = step * j;
-                    Point p = m_patches[k].point(u, v);
-                    mesh.vertex(p);
+                    Point p = m_patches[k]->point(u, v);
+                    mesh->vertex(p);
 
                     if (i > 0 && j > 0)
                     {
@@ -90,8 +91,8 @@ namespace gm
                         int curr_j = j;
 
                         int knn = k * n * n;
-                        mesh.triangle(knn + prev_i * n + prev_j, knn + curr_i * n + prev_j, knn + curr_i * n + curr_j);
-                        mesh.triangle(knn + prev_i * n + prev_j, knn + curr_i * n + curr_j, knn + prev_i * n + curr_j);
+                        mesh->triangle(knn + prev_i * n + prev_j, knn + curr_i * n + prev_j, knn + curr_i * n + curr_j);
+                        mesh->triangle(knn + prev_i * n + prev_j, knn + curr_i * n + curr_j, knn + prev_i * n + curr_j);
                     }
                 }
             }
@@ -175,9 +176,9 @@ namespace gm
     {
     }
 
-    Spline Spline::create(const std::vector<Point> &points, Type type)
+    Ref<Spline> Spline::create(const std::vector<Point> &points, Type type)
     {
-        return Spline(points, type);
+        return create_ref<Spline>(points, type);
     }
 
     double Spline::get_t(double t, unsigned int ip0, unsigned int ip1) const
@@ -251,9 +252,9 @@ namespace gm
     {
     }
 
-    Revolution Revolution::create(const std::vector<Point> &points, Type type)
+    Ref<Revolution> Revolution::create(const std::vector<Point> &points, Type type)
     {
-        return Revolution(points, type);
+        return create_ref<Revolution>(points, type);
     }
 
     void Revolution::radial_fun(const std::function<double(double, double)> &f)
@@ -261,12 +262,12 @@ namespace gm
         m_radial_fun = f;
     }
 
-    Mesh Revolution::polygonize(int n) const
+    Ref<Mesh> Revolution::polygonize(int n) const
     {
         assert(n > 2);
         assert(point_count() > 1);
 
-        Mesh mesh(GL_TRIANGLES);
+        Ref<Mesh> mesh = create_ref<Mesh>(GL_TRIANGLES);
         int nb_spline = 1;
         if (m_type == Type::CATMULL_ROM)
         {
@@ -285,7 +286,7 @@ namespace gm
                 {
                     double v = 2 * M_PI * step * j;
                     Point p = pc + point(u, v);
-                    mesh.vertex(p);
+                    mesh->vertex(p);
                 }
 
                 if (i > 0 && j > 0)
@@ -293,8 +294,8 @@ namespace gm
                     int prev_i = i - 1;
                     int prev_j = j - 1;
                     int curr_j = j % n;
-                    mesh.triangle(prev_i * n + prev_j, i * n + prev_j, i * n + curr_j);
-                    mesh.triangle(prev_i * n + prev_j, i * n + curr_j, prev_i * n + curr_j);
+                    mesh->triangle(prev_i * n + prev_j, i * n + prev_j, i * n + curr_j);
+                    mesh->triangle(prev_i * n + prev_j, i * n + curr_j, prev_i * n + curr_j);
                 }
             }
         }
@@ -360,17 +361,17 @@ namespace gm
     {
     }
 
-    Bezier Bezier::create(const std::vector<std::vector<Point>> &points)
+    Ref<Bezier> Bezier::create(const std::vector<std::vector<Point>> &points)
     {
-        return Bezier(points);
+        return create_ref<Bezier>(points);
     }
 
-    Mesh Bezier::polygonize(int n) const
+    Ref<Mesh> Bezier::polygonize(int n) const
     {
         assert(n > 2);
         assert(point_count() > 4);
 
-        Mesh mesh(GL_TRIANGLES);
+        Ref<Mesh> mesh = create_ref<Mesh>(GL_TRIANGLES);
         double step = 1.0 / (n - 1);
 
         for (int i = 0; i < n; ++i)
@@ -380,15 +381,15 @@ namespace gm
             {
                 double v = step * j;
                 Point p = point(u, v);
-                mesh.vertex(p);
+                mesh->vertex(p);
 
                 if (i > 0 && j > 0)
                 {
                     int prev_i = i - 1;
                     int prev_j = j - 1;
 
-                    mesh.triangle(prev_i * n + prev_j, i * n + prev_j, i * n + j);
-                    mesh.triangle(prev_i * n + prev_j, i * n + j, prev_i * n + j);
+                    mesh->triangle(prev_i * n + prev_j, i * n + prev_j, i * n + j);
+                    mesh->triangle(prev_i * n + prev_j, i * n + j, prev_i * n + j);
                 }
             }
         }
