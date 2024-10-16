@@ -255,6 +255,7 @@ int App::init_gl()
     glClearDepth(1.f);
     glDepthFunc(GL_LESS);
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
 
     return 0;
 }

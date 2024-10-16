@@ -40,12 +40,23 @@ Mesh make_grid(const int n = 10)
     return grid;
 }
 
+GLuint read_program(const std::string &filepath)
+{
+    return read_program(filepath.c_str());
+}
+
 Viewer::Viewer() : App(1024, 640), m_framebuffer(window_width(), window_height())
 {
 }
 
 int Viewer::init_any()
 {
+    m_program_points = read_program(std::string(SHADER_DIR) + "/points.glsl");
+    program_print_errors(m_program_points);
+
+    m_program_edges = read_program(std::string(SHADER_DIR) + "/edges.glsl");
+    program_print_errors(m_program_edges);
+
     //! Bezier spline intialization
     std::vector<Point> curve;
 
@@ -106,9 +117,11 @@ int Viewer::init_any()
     }
 
     //! Implicit surface initialization
-    Ref<gm::ImplicitSphere> isphere = gm::ImplicitSphere::create({0, 0, 0}, 2.f, 1.f, gm::IntersectMethod::SPHERE_TRACING);
+    Ref<gm::ImplicitNode> root = gm::ImplicitBox::create({-2.f, -2.f, -2.f}, {2.f, 2.f, 2.f});
+    root = gm::ImplicitDifference::create(root, gm::ImplicitSphere::create({1.f, 0.f, 0.f}, 2.f));
+    root = gm::ImplicitHull::create(root, 0.2f);
 
-    m_imp_tree = gm::ImplicitTree::create(isphere);
+    m_imp_tree = gm::ImplicitTree::create(root);
 
     m_timer.start();
     m_mImplicit = m_imp_tree->polygonize(m_implicit_resolution, m_imp_box);
@@ -119,8 +132,10 @@ int Viewer::init_any()
 
     if (m_implicit_demo)
     {
-        center_camera(m_mImplicit);
+        center_camera(m_mImplicit_box);
     }
+
+    m_mImplicit_box = m_imp_box.get_box(m_implicit_resolution, m_slide_x, m_slide_y, m_slide_z);
 
     // auto start= std::chrono::high_resolution_clock::now();
     // m_teapot.load_pacthes(std::string(DATA_DIR) + "/teapot");
@@ -229,24 +244,45 @@ int Viewer::render_any()
     Transform view = m_camera.view();
     Transform projection = m_camera.projection();
 
+    Transform mvp = projection * view * model;
+
     DrawParam param;
     param.model(model).view(view).projection(projection);
 
     if (m_spline_demo)
     {
-        if (m_spline_edges_only)
+        if (m_show_faces_spline)
         {
-            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+            glEnable(GL_POLYGON_OFFSET_FILL);
+            glPolygonOffset(1.0, 1.0);
+            glDepthFunc(GL_LESS);
+            param.draw(m_mSpline);
+            glDisable(GL_POLYGON_OFFSET_FILL);
         }
-        else if (m_spline_points_only)
+
+        if (m_show_edges_spline)
         {
-            glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
+            glUseProgram(m_program_edges);
+
+            glLineWidth(m_size_edge);
+            program_uniform(m_program_edges, "uMvpMatrix", mvp);
+            GLint location = glGetUniformLocation(m_program_edges, "uEdgeColor");
+            glUniform4fv(location, 1, &m_color_edge[0]);
+
+            m_mSpline.draw(m_program_edges, true, false, false, false, false);
         }
-        else
+
+        if (m_show_points_spline)
         {
-            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-        }
-        param.draw(m_mSpline);
+            glUseProgram(m_program_points);
+
+            program_uniform(m_program_points, "uMvpMatrix", mvp);
+            program_uniform(m_program_points, "uPointSize", m_size_point);
+            GLint location = glGetUniformLocation(m_program_points, "uPointColor");
+            glUniform4fv(location, 1, &m_color_point[0]);
+
+            glDrawArrays(GL_POINTS, 0, m_mSpline.vertex_count());
+        } 
 
         if (m_show_spline_curve)
         {
@@ -255,19 +291,38 @@ int Viewer::render_any()
     }
     else if (m_patch_demo)
     {
-        if (m_patch_edges_only)
+        if (m_show_faces_patch)
         {
-            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+            glEnable(GL_POLYGON_OFFSET_FILL);
+            glPolygonOffset(1.0, 1.0);
+            glDepthFunc(GL_LESS);
+            param.draw(m_mPatch);
+            glDisable(GL_POLYGON_OFFSET_FILL);
         }
-        else if (m_patch_points_only)
+
+        if (m_show_edges_patch)
         {
-            glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
+            glUseProgram(m_program_edges);
+
+            glLineWidth(m_size_edge);
+            program_uniform(m_program_edges, "uMvpMatrix", mvp);
+            GLint location = glGetUniformLocation(m_program_edges, "uEdgeColor");
+            glUniform4fv(location, 1, &m_color_edge[0]);
+
+            m_mPatch.draw(m_program_edges, true, false, false, false, false);
         }
-        else
+
+        if (m_show_points_patch)
         {
-            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-        }
-        param.draw(m_mPatch);
+            glUseProgram(m_program_points);
+
+            program_uniform(m_program_points, "uMvpMatrix", mvp);
+            program_uniform(m_program_points, "uPointSize", m_size_point);
+            GLint location = glGetUniformLocation(m_program_points, "uPointColor");
+            glUniform4fv(location, 1, &m_color_point[0]);
+
+            glDrawArrays(GL_POINTS, 0, m_mPatch.vertex_count());
+        }    
 
         if (m_show_patch_grid)
         {
@@ -277,20 +332,45 @@ int Viewer::render_any()
     }
     else if (m_implicit_demo)
     {
-        if (m_implicit_edges_only)
+        if (m_show_faces_implicit)
         {
-            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+            glEnable(GL_POLYGON_OFFSET_FILL);
+            glPolygonOffset(1.0, 1.0);
+            glDepthFunc(GL_LESS);
+            param.draw(m_mImplicit);
+            glDisable(GL_POLYGON_OFFSET_FILL);
         }
-        else if (m_implicit_points_only)
+
+        if (m_show_edges_implicit)
         {
-            glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
+            glUseProgram(m_program_edges);
+
+            glLineWidth(m_size_edge);
+            program_uniform(m_program_edges, "uMvpMatrix", mvp);
+            GLint location = glGetUniformLocation(m_program_edges, "uEdgeColor");
+            glUniform4fv(location, 1, &m_color_edge[0]);
+
+            m_mImplicit.draw(m_program_edges, true, false, false, false, false);
         }
-        else
+
+        if (m_show_points_implicit)
         {
-            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+            glUseProgram(m_program_points);
+
+            program_uniform(m_program_points, "uMvpMatrix", mvp);
+            program_uniform(m_program_points, "uPointSize", m_size_point);
+            GLint location = glGetUniformLocation(m_program_points, "uPointColor");
+            glUniform4fv(location, 1, &m_color_point[0]);
+
+            glDrawArrays(GL_POINTS, 0, m_mImplicit.vertex_count());
+        }    
+        
+        if (m_show_implicit_box)
+        {
+            param.draw(m_mImplicit_box);
         }
-        param.draw(m_mImplicit);
     }
+
 
     return 0;
 }
@@ -342,9 +422,13 @@ int Viewer::render_ui()
 
         render_demo_buttons();
 
+        ImGui::SliderFloat("Point size", &m_size_point, 1.f, 50.f, "%.2f");
+        ImGui::SliderFloat("Edge size", &m_size_edge, 1.f, 25.f, "%.2f");
         if (m_spline_demo) render_spline_params();
         else if (m_patch_demo) render_patch_params();
         else if (m_implicit_demo) render_implicit_params();
+        ImGui::ColorPicker3("Point color", &m_color_point[0]);
+        ImGui::ColorPicker3("Edge color", &m_color_edge[0]);
         ImGui::End();
 
         ImGui::Begin("Statistiques");
@@ -417,7 +501,7 @@ int Viewer::render_demo_buttons()
         m_spline_demo = false;
         m_implicit_demo = true;
 
-        center_camera(m_mImplicit);
+        center_camera(m_mImplicit_box);
     }
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip))
     {
@@ -453,9 +537,11 @@ int Viewer::render_patch_params()
     ImGui::InputText("X", surface_function_input_x, IM_ARRAYSIZE(surface_function_input_x));
     ImGui::InputText("Y", surface_function_input_y, IM_ARRAYSIZE(surface_function_input_y));
     ImGui::InputText("Z", surface_function_input_z, IM_ARRAYSIZE(surface_function_input_z));
-    ImGui::Checkbox("Edges only", &m_patch_edges_only);
+    ImGui::Checkbox("Faces", &m_show_faces_patch);
     ImGui::SameLine();
-    ImGui::Checkbox("Points only", &m_patch_points_only);
+    ImGui::Checkbox("Edges", &m_show_edges_patch);
+    ImGui::SameLine();
+    ImGui::Checkbox("Points", &m_show_points_patch);
     ImGui::SameLine();
     ImGui::Checkbox("Grid", &m_show_patch_grid);
     ImGui::NewLine();
@@ -533,9 +619,11 @@ int Viewer::render_spline_params()
     ImGui::InputText("X", curve_function_input_x, IM_ARRAYSIZE(curve_function_input_x));
     ImGui::InputText("Y", curve_function_input_y, IM_ARRAYSIZE(curve_function_input_y));
     ImGui::InputText("Z", curve_function_input_z, IM_ARRAYSIZE(curve_function_input_z));
-    ImGui::Checkbox("Edges only", &m_spline_edges_only);
+    ImGui::Checkbox("Faces", &m_show_faces_spline);
     ImGui::SameLine();
-    ImGui::Checkbox("Points only", &m_spline_points_only);
+    ImGui::Checkbox("Edges", &m_show_edges_spline);
+    ImGui::SameLine();
+    ImGui::Checkbox("Points", &m_show_points_spline);
     ImGui::SameLine();
     ImGui::Checkbox("Curve", &m_show_spline_curve);
     ImGui::Text("You can use the two variables 't' and 'a' (angle value) in the expression below :");
@@ -602,12 +690,40 @@ int Viewer::render_implicit_params()
     ImVec2 sz = ImVec2(-FLT_MIN, 45.0f);
 
     ImGui::SeparatorText("Implicit Surface");
-    ImGui::SliderInt("Resolution", &m_implicit_resolution, 3, 1000);
-    ImGui::Checkbox("Edges only", &m_implicit_edges_only);
+    if (ImGui::SliderInt("Resolution", &m_implicit_resolution, 3, 1000))
+    {
+        m_slide_x = 0;
+        m_slide_y = 0;
+        m_slide_z = 0;
+    }
+    if (ImGui::SliderInt("Box slide x", &m_slide_x, 0, m_implicit_resolution))
+    {
+        m_mImplicit_box = m_imp_box.get_box(m_implicit_resolution, m_slide_x, m_slide_y, m_slide_z);
+    }
+    if (ImGui::SliderInt("Box slide y", &m_slide_y, 0, m_implicit_resolution))
+    {
+        m_mImplicit_box = m_imp_box.get_box(m_implicit_resolution, m_slide_x, m_slide_y, m_slide_z);
+    }
+    if (ImGui::SliderInt("Box slide z", &m_slide_z, 0, m_implicit_resolution))
+    {
+        m_mImplicit_box = m_imp_box.get_box(m_implicit_resolution, m_slide_x, m_slide_y, m_slide_z);
+    }
+    ImGui::SliderFloat3("Pmin box", pmin, -10.f, 10.f, "%.2f");
+    ImGui::SliderFloat3("Pmax box", pmax, -10.f, 10.f, "%.2f");
+    ImGui::Checkbox("Faces", &m_show_faces_implicit);
     ImGui::SameLine();
-    ImGui::Checkbox("points only", &m_implicit_points_only);
+    ImGui::Checkbox("Edges", &m_show_edges_implicit);
+    ImGui::SameLine();
+    ImGui::Checkbox("Points", &m_show_points_implicit);
+    ImGui::SameLine();
+    ImGui::Checkbox("implicit box", &m_show_implicit_box);
     if (ImGui::Button("Render", sz))
     {
+        m_imp_box.a({pmin[0], pmin[1], pmin[2]});
+        m_imp_box.b({pmax[0], pmax[1], pmax[2]});
+
+        m_mImplicit_box = m_imp_box.get_box(m_implicit_resolution, m_slide_x, m_slide_y, m_slide_z);
+
         m_timer.start();
         m_mImplicit = m_imp_tree->polygonize(m_implicit_resolution, m_imp_box);
         m_timer.stop();
@@ -615,7 +731,7 @@ int Viewer::render_implicit_params()
         m_ipolytms = m_timer.ms();
         m_ipolytus = m_timer.us();
 
-        center_camera(m_mImplicit);
+        center_camera(m_mImplicit_box);
     }
 
     return 0;

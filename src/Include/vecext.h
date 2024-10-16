@@ -18,3 +18,6 @@ Vector operator*= ( const Vector& a, const Vector& b );
 
 Vector min( const Vector& a, const Vector& b );
 Vector max( const Vector& a, const Vector& b );
+
+Vector abs( const Vector& a );
+Point abs( const Point& a );

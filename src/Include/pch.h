@@ -33,6 +33,7 @@
 #include "draw.h"
 #include "image_io.h"
 #include "files.h"
+#include "uniforms.h"
 
 // Exprtk
 #include "exprtk_wrapper.h"

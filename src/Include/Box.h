@@ -14,9 +14,9 @@ namespace gm
     public:
         //! Empty.
         Box() {}
-        explicit Box(double);
+        explicit Box(float);
         explicit Box(const Vector &, const Vector &);
-        explicit Box(const Vector &, double);
+        explicit Box(const Vector &, float);
         explicit Box(const std::vector<Vector> &);
         explicit Box(const Box &, const Box &);
 
@@ -35,30 +35,39 @@ namespace gm
         Vector center() const;
         Vector vertex(int) const;
 
+        void update(const Vector &c, float r);
+        void a(const Vector &a);
+        void b(const Vector &b);
+
         Vector size() const;
         Vector diagonal() const;
-        double radius() const;
+        float radius() const;
 
         bool inside(const Box &) const;
         bool inside(const Vector &) const;
 
-        double volume() const;
-        double area() const;
+        float volume() const;
+        float area() const;
 
         // Compute sub-box
         Box sub(int) const;
 
         // Translation, scale
         void translate(const Vector &);
-        void scale(double);
+        void scale(float);
+
+        Mesh get_box(int resolution = 1, int slide_x = 0, int slide_y = 0, int slide_z = 0) const;
 
         friend std::ostream &operator<<(std::ostream &, const Box &);
 
+    private: 
+        void get_grid(Mesh& mesh, int n, int s, int a, int b, int c, int d, int e, int f, int g, int h) const; 
+
     protected:
-        Vector a, b; //!< Lower and upper vertex.
+        Vector m_a, m_b; //!< Lower and upper vertex.
 
     public:
-        static const double s_epsilon;   //!< Internal \htmlonly\s_epsilon;\endhtmlonly for ray intersection tests.
+        static const float s_epsilon;    //!< Internal \htmlonly\s_epsilon;\endhtmlonly for ray intersection tests.
         static const Box s_null;         //!< Empty box.
         static const int s_edge[24];     //!< Edge vertices.
         static const Vector s_normal[6]; //!< Face normals.
@@ -67,24 +76,24 @@ namespace gm
     inline Vector &Box::operator[](int i)
     {
         if (i == 0)
-            return a;
+            return m_a;
         else
-            return b;
+            return m_b;
     }
 
     //! Overloaded.
     inline Vector Box::operator[](int i) const
     {
         if (i == 0)
-            return a;
+            return m_a;
         else
-            return b;
+            return m_b;
     }
 
     //! Returns the center of the box.
     inline Vector Box::center() const
     {
-        return 0.5 * (a + b);
+        return 0.5 * (m_a + m_b);
     }
 
     /*!
@@ -92,24 +101,24 @@ namespace gm
     */
     inline Vector Box::diagonal() const
     {
-        return (b - a);
+        return (m_b - m_a);
     }
 
     /*!
-    \brief Compute the size (width, length and height) of a box.
+    \brief Compute the size (width, length and height) of m_a box.
     \sa Box::diagonal()
     */
     inline Vector Box::size() const
     {
-        return b - a;
+        return m_b - m_a;
     }
 
     /*!
     \brief Returns the radius of the box, i.e. the length of the half diagonal of the box.
     */
-    inline double Box::radius() const
+    inline float Box::radius() const
     {
-        return 0.5 * length(b - a);
+        return 0.5 * length(m_b - m_a);
     }
 
     /*!
@@ -117,27 +126,43 @@ namespace gm
 
     The returned vector is computed by analysing the first three bits of k as follows:
     \code
-    Vector vertex=Vector((k&1)?b[0]:a[0],(k&2)?b[1]:a[1],(k&4)?b[2]:a[2]);
+    Vector vertex=Vector((k&1)?m_b[0]:m_a[0],(k&2)?m_b[1]:m_a[1],(k&4)?m_b[2]:m_a[2]);
     \endcode
     */
     inline Vector Box::vertex(int k) const
     {
-        return Vector((k & 1) ? b(0) : a(0), (k & 2) ? b(1) : a(1), (k & 4) ? b(2) : a(2));
+        return Vector((k & 1) ? m_b(0) : m_a(0), (k & 2) ? m_b(1) : m_a(1), (k & 4) ? m_b(2) : m_a(2));
     }
 
-    //! Compute the volume of a box.
-    inline double Box::volume() const
+    inline void Box::a(const Vector &a)
     {
-        Vector side = b - a;
+        m_a = a;
+    }
+
+    inline void Box::b(const Vector &b)
+    {
+        m_b = b;
+    }
+
+    inline void Box::update(const Vector &c, float r)
+    {
+        m_a = c - Vector(r);
+        m_b = c + Vector(r);
+    }
+
+    //! Compute the volume of m_a box.
+    inline float Box::volume() const
+    {
+        Vector side = m_b - m_a;
         return side(0) * side(1) * side(2);
     }
 
     /*!
-    \brief Compute the surface area of a box.
+    \brief Compute the surface area of m_a box.
     */
-    inline double Box::area() const
+    inline float Box::area() const
     {
-        Vector side = b - a;
+        Vector side = m_b - m_a;
         return 2.0 * (side(0) * side(1) + side(0) * side(2) + side(1) * side(2));
     }
 
@@ -147,33 +172,33 @@ namespace gm
     */
     inline bool Box::inside(const Box &box) const
     {
-        return ((a < box.a) && (b > box.b));
+        return ((m_a < box.m_a) && (m_b > box.m_b));
     }
 
     /*!
-    \brief Check if a point is inside the box.
+    \brief Check if m_a point is inside the box.
     \param p Point.
     */
     inline bool Box::inside(const Vector &p) const
     {
-        return ((a < p) && (b > p));
+        return ((m_a < p) && (m_b > p));
     }
 
     /*!
     \brief Check if two boxes are (strictly) equal.
-    \param a, b Boxes.
+    \param m_a, m_b Boxes.
     */
-    inline int operator==(const Box &a, const Box &b)
+    inline int operator==(const Box &m_a, const Box &m_b)
     {
-        return (a.a == b.a) && (a.b == b.b);
+        return (m_a.m_a == m_b.m_a) && (m_a.m_b == m_b.m_b);
     }
 
     /*!
     \brief Check if two boxes are (strictly) different.
-    \param a, b Boxes.
+    \param m_a, m_b Boxes.
     */
-    inline int operator!=(const Box &a, const Box &b)
+    inline int operator!=(const Box &m_a, const Box &m_b)
     {
-        return !(a == b);
+        return !(m_a == m_b);
     }
 } // namespace gm

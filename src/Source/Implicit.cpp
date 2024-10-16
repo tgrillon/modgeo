@@ -2,8 +2,8 @@
 
 namespace gm
 {
-    const float ImplicitNode::s_epsilon = 1e-4;
-    const int ImplicitNode::s_limit = 1e4;
+    const float ImplicitNode::s_epsilon = 0.0001f;
+    const int ImplicitNode::s_limit = 10000;
 
     Point Ray::point(float t) const
     {
@@ -33,7 +33,7 @@ namespace gm
         float y = value({p.x, p.y + s_epsilon, p.z}) - value({p.x, p.y - s_epsilon, p.z});
         float z = value({p.x, p.y, p.z + s_epsilon}) - value({p.x, p.y, p.z - s_epsilon});
 
-        return Vector(x, y, z) * (0.5 / s_epsilon);
+        return Vector(x, y, z) / (2 * s_epsilon);
     }
 
     bool ImplicitNode::intersect(const Ray &ray, float t) const
@@ -85,9 +85,36 @@ namespace gm
         return false;
     }
 
+    /********************** Implicit Unary Operator ************************/
+
+    ImplicitUnaryOperator::ImplicitUnaryOperator(const Ref<ImplicitNode> &n) : ImplicitNode(), m_node(n)
+    {
+    }
+
+    /********************** Implicit Hull ************************/
+
+    ImplicitHull::ImplicitHull(const Ref<ImplicitNode>& n, float thickness) : ImplicitUnaryOperator(n), m_thickness(thickness)
+    {
+    }
+
+    Ref<ImplicitHull> ImplicitHull::create(const Ref<ImplicitNode> &n, float thickness)
+    {
+        return std::make_shared<ImplicitHull>(n, thickness);
+    }
+
+    float ImplicitHull::value(const Point &p) const
+    {
+        return abs(m_node->value(p)) - m_thickness * 0.5;
+    }
+
+    ImplicitType ImplicitHull::type() const
+    {
+        return ImplicitType::UNARY_OPERATOR_HULL;
+    }
+
     /********************** Implicit Binary Operator ************************/
 
-    ImplicitBinaryOperator::ImplicitBinaryOperator(const Ref<ImplicitNode> &left, const Ref<ImplicitNode> &right) : m_left(left), m_right(right)
+    ImplicitBinaryOperator::ImplicitBinaryOperator(const Ref<ImplicitNode> &left, const Ref<ImplicitNode> &right) : ImplicitNode(), m_left(left), m_right(right)
     {
     }
 
@@ -112,6 +139,48 @@ namespace gm
         return ImplicitType::BINARY_OPERATOR_UNION;
     }
 
+    /************************** Implicit Intersection ****************************/
+
+    ImplicitIntersection::ImplicitIntersection(const Ref<ImplicitNode> &l, const Ref<ImplicitNode> &r) : ImplicitBinaryOperator(l, r)
+    {
+    }
+
+    Ref<ImplicitIntersection> ImplicitIntersection::create(const Ref<ImplicitNode> &l, const Ref<ImplicitNode> &r)
+    {
+        return std::make_shared<ImplicitIntersection>(l, r);
+    }
+
+    float ImplicitIntersection::value(const Point &p) const
+    {
+        return std::max(m_left->value(p), m_right->value(p));
+    }
+
+    ImplicitType ImplicitIntersection::type() const
+    {
+        return ImplicitType::BINARY_OPERATOR_INTERSECTION;
+    }
+
+    /************************** Implicit Difference ****************************/
+
+    ImplicitDifference::ImplicitDifference(const Ref<ImplicitNode> &l, const Ref<ImplicitNode> &r) : ImplicitBinaryOperator(l, r)
+    {
+    }
+
+    Ref<ImplicitDifference> ImplicitDifference::create(const Ref<ImplicitNode> &l, const Ref<ImplicitNode> &r)
+    {
+        return std::make_shared<ImplicitDifference>(l, r);
+    }
+
+    float ImplicitDifference::value(const Point &p) const
+    {
+        return std::max(m_left->value(p), -m_right->value(p));
+    }
+
+    ImplicitType ImplicitDifference::type() const
+    {
+        return ImplicitType::BINARY_OPERATOR_DIFFERENCE;
+    }
+
     /************************** Implicit Sphere ****************************/
 
     ImplicitSphere::ImplicitSphere(const Point &c, float r, float l, IntersectMethod im) : ImplicitNode(l, im), m_center(c), m_radius(r)
@@ -132,6 +201,28 @@ namespace gm
     ImplicitType ImplicitSphere::type() const
     {
         return ImplicitType::PRIMITIVE_SPHERE;
+    }
+
+    /************************** Implicit Box ******************************/
+
+    ImplicitBox::ImplicitBox(const Point &a, const Point &b, float lambda, IntersectMethod im) : ImplicitNode(lambda, im), m_pmin(a), m_pmax(b)
+    {
+    }
+
+    Ref<ImplicitBox> ImplicitBox::create(const Point &a, const Point &b, float l, IntersectMethod im)
+    {
+        return std::make_shared<ImplicitBox>(a, b, l, im);
+    }
+
+    float ImplicitBox::value(const Point &p) const
+    {
+        Vector q = Vector(abs(p) - ((m_pmax - m_pmin) * 0.5));
+        return std::min(std::max(q(0), std::max(q(1), q(2))), 0.f) + length(max(q, Vector(0)));
+    }
+
+    ImplicitType ImplicitBox::type() const
+    {
+        return ImplicitType::PRIMITIVE_BOX;
     }
 
     /************************** Implicit Tree ******************************/
@@ -158,7 +249,7 @@ namespace gm
         \param g Returned geometry.
         \param s_epsilon Epsilon value for computing vertices on straddling edges.
         */
-    Mesh ImplicitTree::polygonize(int n, const Box &box, const float &s_epsilon) const
+    Mesh ImplicitTree::polygonize(int n, const Box &box) const
     {
         Mesh mesh(GL_TRIANGLES);
 
@@ -217,7 +308,7 @@ namespace gm
                 // We need a xor b, which can be implemented a == !b
                 if (!((a[i * ny + j] < 0.0) == !(a[(i + 1) * ny + j] >= 0.0)))
                 {
-                    auto vertex = dichotomy(u[i * ny + j], u[(i + 1) * ny + j], a[i * ny + j], a[(i + 1) * ny + j], d(0), s_epsilon);
+                    auto vertex = dichotomy(u[i * ny + j], u[(i + 1) * ny + j], a[i * ny + j], a[(i + 1) * ny + j], d(0));
                     mesh.vertex(vertex);
                     mesh.normal(normal(vertex));
                     eax[i * ny + j] = nv;
@@ -231,7 +322,7 @@ namespace gm
             {
                 if (!((a[i * ny + j] < 0.0) == !(a[i * ny + (j + 1)] >= 0.0)))
                 {
-                    auto vertex = dichotomy(u[i * ny + j], u[i * ny + (j + 1)], a[i * ny + j], a[i * ny + (j + 1)], d(1), s_epsilon);
+                    auto vertex = dichotomy(u[i * ny + j], u[i * ny + (j + 1)], a[i * ny + j], a[i * ny + (j + 1)], d(1));
                     mesh.vertex(vertex);
                     mesh.normal(normal(vertex));
                     eay[i * ny + j] = nv;
@@ -264,7 +355,7 @@ namespace gm
                     //   if (((b[i*ny + j] < 0.0) && (b[(i + 1)*ny + j] >= 0.0)) || ((b[i*ny + j] >= 0.0) && (b[(i + 1)*ny + j] < 0.0)))
                     if (!((b[i * ny + j] < 0.0) == !(b[(i + 1) * ny + j] >= 0.0)))
                     {
-                        auto vertex = dichotomy(v[i * ny + j], v[(i + 1) * ny + j], b[i * ny + j], b[(i + 1) * ny + j], d(0), s_epsilon);
+                        auto vertex = dichotomy(v[i * ny + j], v[(i + 1) * ny + j], b[i * ny + j], b[(i + 1) * ny + j], d(0));
                         mesh.vertex(vertex);
                         mesh.normal(normal(vertex));
                         ebx[i * ny + j] = nv;
@@ -280,7 +371,7 @@ namespace gm
                     // if (((b[i*ny + j] < 0.0) && (b[i*ny + (j + 1)] >= 0.0)) || ((b[i*ny + j] >= 0.0) && (b[i*ny + (j + 1)] < 0.0)))
                     if (!((b[i * ny + j] < 0.0) == !(b[i * ny + (j + 1)] >= 0.0)))
                     {
-                        auto vertex = dichotomy(v[i * ny + j], v[i * ny + (j + 1)], b[i * ny + j], b[i * ny + (j + 1)], d(1), s_epsilon);
+                        auto vertex = dichotomy(v[i * ny + j], v[i * ny + (j + 1)], b[i * ny + j], b[i * ny + (j + 1)], d(1));
                         mesh.vertex(vertex);
                         mesh.normal(normal(vertex));
                         eby[i * ny + j] = nv;
@@ -297,7 +388,7 @@ namespace gm
                     // if ((a[i*ny + j] < 0.0) && (b[i*ny + j] >= 0.0) || (a[i*ny + j] >= 0.0) && (b[i*ny + j] < 0.0))
                     if (!((a[i * ny + j] < 0.0) == !(b[i * ny + j] >= 0.0)))
                     {
-                        auto vertex = dichotomy(u[i * ny + j], v[i * ny + j], a[i * ny + j], b[i * ny + j], d(2), s_epsilon);
+                        auto vertex = dichotomy(u[i * ny + j], v[i * ny + j], a[i * ny + j], b[i * ny + j], d(2));
                         mesh.vertex(vertex);
                         mesh.normal(normal(vertex));
                         ez[i * ny + j] = nv;
@@ -384,7 +475,7 @@ namespace gm
     \param s_epsilon Precision.
     \return Point on the implicit surface.
     */
-    Vector ImplicitTree::dichotomy(Vector a, Vector b, float va, float vb, float length, const float &s_epsilon) const
+    Vector ImplicitTree::dichotomy(Vector a, Vector b, float va, float vb, float length) const
     {
         int ia = va > 0.0 ? 1 : -1;
 
