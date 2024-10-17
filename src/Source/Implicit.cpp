@@ -246,6 +246,28 @@ namespace gm
         return ImplicitType::PRIMITIVE_PLANE;
     }
 
+    /************************** Implicit Torus ******************************/
+
+    ImplicitTorus::ImplicitTorus(float r1, float r2, float lambda, IntersectMethod im) : ImplicitNode(lambda, im), m_r1(r1), m_r2(r2)
+    {
+    }
+
+    Ref<ImplicitTorus> ImplicitTorus::create(float r1, float r2, float l, IntersectMethod im)
+    {
+        return std::make_shared<ImplicitTorus>(r1, r2, l, im);
+    }
+
+    float ImplicitTorus::value(const Point &p) const
+    {
+        vec2 q = vec2(length({p.x, p.z}) - m_r1, p.y);
+        return length(q) - m_r2;
+    }
+
+    ImplicitType ImplicitTorus::type() const
+    {
+        return ImplicitType::PRIMITIVE_TORUS;
+    }
+
     /************************** Implicit Tree ******************************/
 
     ImplicitTree::ImplicitTree(const Ref<ImplicitNode> &root, float l, IntersectMethod im) : ImplicitNode(l, im), m_root(root)

@@ -175,31 +175,44 @@ Vector m_b=box[1]; // Opposite vertex
     Ref<Mesh> Box::get_box(int resolution, int slide_x, int slide_y, int slide_z) const
     {
         Ref<Mesh> mesh = create_ref<Mesh>(GL_LINES);
+        
+        Point a = Point(vertex(0));
+        Point b = Point(vertex(1));
+        Point c = Point(vertex(2));
+        Point d = Point(vertex(3));
+        Point e = Point(vertex(4));
+        Point f = Point(vertex(5));
+        Point g = Point(vertex(6));
+        Point h = Point(vertex(7));
+        
+        get_grid(mesh, resolution, slide_x, e, a, g, c, f, b, h, d);
+        get_grid(mesh, resolution, slide_y, c, d, g, h, a, b, e, f);
+        get_grid(mesh, resolution, slide_z, a, b, c, d, e, f, g, h);
 
-        get_grid(mesh, resolution, slide_x, 4, 0, 6, 2, 5, 1, 7, 3);
-        get_grid(mesh, resolution, slide_y, 2, 3, 6, 7, 0, 1, 4, 5);
-        get_grid(mesh, resolution, slide_z, 0, 1, 2, 3, 4, 5, 6, 7);
+        mesh->vertex(a); mesh->vertex(b);  
+        mesh->vertex(a); mesh->vertex(c);  
+        mesh->vertex(b); mesh->vertex(d);  
+        mesh->vertex(c); mesh->vertex(d);  
+        mesh->vertex(e); mesh->vertex(f);  
+        mesh->vertex(e); mesh->vertex(g);  
+        mesh->vertex(f); mesh->vertex(h);  
+        mesh->vertex(g); mesh->vertex(h);  
+        mesh->vertex(c); mesh->vertex(g);  
+        mesh->vertex(a); mesh->vertex(e);  
+        mesh->vertex(b); mesh->vertex(f);  
+        mesh->vertex(d); mesh->vertex(h);  
 
         return mesh;
     }
     
-    void Box::get_grid(Ref<Mesh> mesh, int n, int s, int _a, int _b, int _c, int _d, int _e, int _f, int _g, int _h) const
+    void Box::get_grid(Ref<Mesh> mesh, int n, int s, const Point& _a, const Point& _b, const Point& _c, const Point& _d, const Point& _e, const Point& _f, const Point& _g, const Point& _h) const
     {
-        Point a = Point(vertex(_a));
-        Point b = Point(vertex(_b));
-        Point c = Point(vertex(_c));
-        Point d = Point(vertex(_d));
-        Point e = Point(vertex(_e));
-        Point f = Point(vertex(_f));
-        Point g = Point(vertex(_g));
-        Point h = Point(vertex(_h));
-
         float step = static_cast<float>(s) / n; 
 
-        a = a + step * Vector(a, e);
-        b = b + step * Vector(b, f);
-        c = c + step * Vector(c, g);
-        d = d + step * Vector(d, h);
+        Point a = _a + step * Vector(_a, _e);
+        Point b = _b + step * Vector(_b, _f);
+        Point c = _c + step * Vector(_c, _g);
+        Point d = _d + step * Vector(_d, _h);
 
         Vector ab(a, b);
         Vector ac(a, c);

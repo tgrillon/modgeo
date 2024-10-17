@@ -21,3 +21,6 @@ Vector max( const Vector& a, const Vector& b );
 
 Vector abs( const Vector& a );
 Point abs( const Point& a );
+
+float length(const vec2& v);
+float length2(const vec2& v);

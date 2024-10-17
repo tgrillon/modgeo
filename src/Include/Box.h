@@ -62,7 +62,7 @@ namespace gm
         friend std::ostream &operator<<(std::ostream &, const Box &);
 
     private: 
-        void get_grid(Ref<Mesh> mesh, int n, int s, int a, int b, int c, int d, int e, int f, int g, int h) const; 
+        void get_grid(Ref<Mesh> mesh, int n, int s, const Point& a, const Point& b, const Point& c, const Point& d, const Point& e, const Point& f, const Point& g, const Point& h) const; 
 
     protected:
         Vector m_a, m_b; //!< Lower and upper vertex.

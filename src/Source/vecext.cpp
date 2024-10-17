@@ -51,3 +51,13 @@ Point abs( const Point& a )
 {
     return { abs(a(0)), abs(a(1)), abs(a(2)) };
 }
+
+float length2(const vec2 &v)
+{
+    return v.x * v.x + v.y + v.y;
+}
+
+float length(const vec2 &v)
+{
+    return sqrt(length2(v));
+}

@@ -213,6 +213,21 @@ namespace gm
         float m_h; 
     };  
 
+    class ImplicitTorus final: public ImplicitNode
+    {
+    public: 
+        ImplicitTorus(float r1, float r2, float lambda = 1.0, IntersectMethod im = IntersectMethod::RAY_MARCHING);
+        ~ImplicitTorus()=default;
+
+        static Ref<ImplicitTorus> create(float r1, float r2, float l= 1.0, IntersectMethod im= IntersectMethod::RAY_MARCHING);
+
+        float value(const Point& p) const override; 
+
+        ImplicitType type() const override;
+    private: 
+        float m_r1, m_r2;
+    };
+
     class ImplicitTree final: public ImplicitNode
     {
     public:

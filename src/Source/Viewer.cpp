@@ -256,38 +256,41 @@ int Viewer::render_any()
     {
         handle_spline_event();
 
-        if (m_show_faces_spline)
+        if (m_mSpline->has_position())
         {
-            glEnable(GL_POLYGON_OFFSET_FILL);
-            glPolygonOffset(1.0, 1.0);
-            glDepthFunc(GL_LESS);
-            param.draw(*m_mSpline);
-            glDisable(GL_POLYGON_OFFSET_FILL);
+            if (m_show_faces_spline)
+            {
+                glEnable(GL_POLYGON_OFFSET_FILL);
+                glPolygonOffset(1.0, 1.0);
+                glDepthFunc(GL_LESS);
+                param.draw(*m_mSpline);
+                glDisable(GL_POLYGON_OFFSET_FILL);
+            }
+
+            if (m_show_edges_spline)
+            {
+                glUseProgram(m_program_edges);
+
+                glLineWidth(m_size_edge);
+                program_uniform(m_program_edges, "uMvpMatrix", mvp);
+                GLint location = glGetUniformLocation(m_program_edges, "uEdgeColor");
+                glUniform4fv(location, 1, &m_color_edge[0]);
+
+                m_mSpline->draw(m_program_edges, true, false, false, false, false);
+            }
+
+            if (m_show_points_spline)
+            {
+                glUseProgram(m_program_points);
+
+                program_uniform(m_program_points, "uMvpMatrix", mvp);
+                program_uniform(m_program_points, "uPointSize", m_size_point);
+                GLint location = glGetUniformLocation(m_program_points, "uPointColor");
+                glUniform4fv(location, 1, &m_color_point[0]);
+
+                glDrawArrays(GL_POINTS, 0, m_mSpline->vertex_count());
+            } 
         }
-
-        if (m_show_edges_spline)
-        {
-            glUseProgram(m_program_edges);
-
-            glLineWidth(m_size_edge);
-            program_uniform(m_program_edges, "uMvpMatrix", mvp);
-            GLint location = glGetUniformLocation(m_program_edges, "uEdgeColor");
-            glUniform4fv(location, 1, &m_color_edge[0]);
-
-            m_mSpline->draw(m_program_edges, true, false, false, false, false);
-        }
-
-        if (m_show_points_spline)
-        {
-            glUseProgram(m_program_points);
-
-            program_uniform(m_program_points, "uMvpMatrix", mvp);
-            program_uniform(m_program_points, "uPointSize", m_size_point);
-            GLint location = glGetUniformLocation(m_program_points, "uPointColor");
-            glUniform4fv(location, 1, &m_color_point[0]);
-
-            glDrawArrays(GL_POINTS, 0, m_mSpline->vertex_count());
-        } 
 
         if (m_show_spline_curve)
         {
@@ -298,38 +301,41 @@ int Viewer::render_any()
     {
         handle_patch_event();
 
-        if (m_show_faces_patch)
+        if (m_mPatch->has_position())
         {
-            glEnable(GL_POLYGON_OFFSET_FILL);
-            glPolygonOffset(1.0, 1.0);
-            glDepthFunc(GL_LESS);
-            param.draw(*m_mPatch);
-            glDisable(GL_POLYGON_OFFSET_FILL);
+            if (m_show_faces_patch)
+            {
+                glEnable(GL_POLYGON_OFFSET_FILL);
+                glPolygonOffset(1.0, 1.0);
+                glDepthFunc(GL_LESS);
+                param.draw(*m_mPatch);
+                glDisable(GL_POLYGON_OFFSET_FILL);
+            }
+
+            if (m_show_edges_patch)
+            {
+                glUseProgram(m_program_edges);
+
+                glLineWidth(m_size_edge);
+                program_uniform(m_program_edges, "uMvpMatrix", mvp);
+                GLint location = glGetUniformLocation(m_program_edges, "uEdgeColor");
+                glUniform4fv(location, 1, &m_color_edge[0]);
+
+                m_mPatch->draw(m_program_edges, true, false, false, false, false);
+            }
+
+            if (m_show_points_patch)
+            {
+                glUseProgram(m_program_points);
+
+                program_uniform(m_program_points, "uMvpMatrix", mvp);
+                program_uniform(m_program_points, "uPointSize", m_size_point);
+                GLint location = glGetUniformLocation(m_program_points, "uPointColor");
+                glUniform4fv(location, 1, &m_color_point[0]);
+
+                glDrawArrays(GL_POINTS, 0, m_mPatch->vertex_count());
+            }    
         }
-
-        if (m_show_edges_patch)
-        {
-            glUseProgram(m_program_edges);
-
-            glLineWidth(m_size_edge);
-            program_uniform(m_program_edges, "uMvpMatrix", mvp);
-            GLint location = glGetUniformLocation(m_program_edges, "uEdgeColor");
-            glUniform4fv(location, 1, &m_color_edge[0]);
-
-            m_mPatch->draw(m_program_edges, true, false, false, false, false);
-        }
-
-        if (m_show_points_patch)
-        {
-            glUseProgram(m_program_points);
-
-            program_uniform(m_program_points, "uMvpMatrix", mvp);
-            program_uniform(m_program_points, "uPointSize", m_size_point);
-            GLint location = glGetUniformLocation(m_program_points, "uPointColor");
-            glUniform4fv(location, 1, &m_color_point[0]);
-
-            glDrawArrays(GL_POINTS, 0, m_mPatch->vertex_count());
-        }    
 
         if (m_show_patch_grid)
         {
@@ -341,39 +347,42 @@ int Viewer::render_any()
     {
         handle_implicit_event();
 
-        if (m_show_faces_implicit)
+        if (m_mImplicit->has_position())
         {
-            glEnable(GL_POLYGON_OFFSET_FILL);
-            glPolygonOffset(1.0, 1.0);
-            glDepthFunc(GL_LESS);
-            param.draw(*m_mImplicit);
-            glDisable(GL_POLYGON_OFFSET_FILL);
+            if (m_show_faces_implicit)
+            {
+                glEnable(GL_POLYGON_OFFSET_FILL);
+                glPolygonOffset(1.0, 1.0);
+                glDepthFunc(GL_LESS);
+                param.draw(*m_mImplicit);
+                glDisable(GL_POLYGON_OFFSET_FILL);
+            }
+
+            if (m_show_edges_implicit)
+            {
+                glUseProgram(m_program_edges);
+
+                glLineWidth(m_size_edge);
+                program_uniform(m_program_edges, "uMvpMatrix", mvp);
+                GLint location = glGetUniformLocation(m_program_edges, "uEdgeColor");
+                glUniform4fv(location, 1, &m_color_edge[0]);
+
+                m_mImplicit->draw(m_program_edges, true, false, false, false, false);
+            }
+
+            if (m_show_points_implicit)
+            {
+                glUseProgram(m_program_points);
+
+                program_uniform(m_program_points, "uMvpMatrix", mvp);
+                program_uniform(m_program_points, "uPointSize", m_size_point);
+                GLint location = glGetUniformLocation(m_program_points, "uPointColor");
+                glUniform4fv(location, 1, &m_color_point[0]);
+
+                glDrawArrays(GL_POINTS, 0, m_mImplicit->vertex_count());
+            }    
         }
 
-        if (m_show_edges_implicit)
-        {
-            glUseProgram(m_program_edges);
-
-            glLineWidth(m_size_edge);
-            program_uniform(m_program_edges, "uMvpMatrix", mvp);
-            GLint location = glGetUniformLocation(m_program_edges, "uEdgeColor");
-            glUniform4fv(location, 1, &m_color_edge[0]);
-
-            m_mImplicit->draw(m_program_edges, true, false, false, false, false);
-        }
-
-        if (m_show_points_implicit)
-        {
-            glUseProgram(m_program_points);
-
-            program_uniform(m_program_points, "uMvpMatrix", mvp);
-            program_uniform(m_program_points, "uPointSize", m_size_point);
-            GLint location = glGetUniformLocation(m_program_points, "uPointColor");
-            glUniform4fv(location, 1, &m_color_point[0]);
-
-            glDrawArrays(GL_POINTS, 0, m_mImplicit->vertex_count());
-        }    
-        
         if (m_show_implicit_box)
         {
             param.draw(*m_mImplicit_box);
