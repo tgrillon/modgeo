@@ -117,9 +117,12 @@ int Viewer::init_any()
     }
 
     //! Implicit surface initialization
-    Ref<gm::ImplicitNode> root = gm::ImplicitBox::create({-2.f, -2.f, -2.f}, {2.f, 2.f, 2.f});
-    root = gm::ImplicitDifference::create(root, gm::ImplicitSphere::create({1.f, 0.f, 0.f}, 2.f));
-    root = gm::ImplicitHull::create(root, 0.2f);
+    Ref<gm::ImplicitNode> root = gm::ImplicitSphere::create({0.0,0.0,0.0}, 2.f);
+    root = gm::ImplicitDifference::create(root, gm::ImplicitSphere::create({0.5, 0.0, 0.0}, 1.6f));
+    // root = gm::ImplicitDifference::create(root, gm::ImplicitPlane::create({0.f, 1.f, 0.f}, 1.f));
+    // root = gm::ImplicitHull::create(root, 0.5f);
+    // root = gm::ImplicitDifference::create(root, gm::ImplicitSphere::create({1.f, 0.f, 0.f}, 2.f));
+    // root = gm::ImplicitHull::create(root, 0.2f);
 
     m_imp_tree = gm::ImplicitTree::create(root);
 
@@ -251,6 +254,8 @@ int Viewer::render_any()
 
     if (m_spline_demo)
     {
+        handle_spline_event();
+
         if (m_show_faces_spline)
         {
             glEnable(GL_POLYGON_OFFSET_FILL);
@@ -291,6 +296,8 @@ int Viewer::render_any()
     }
     else if (m_patch_demo)
     {
+        handle_patch_event();
+
         if (m_show_faces_patch)
         {
             glEnable(GL_POLYGON_OFFSET_FILL);
@@ -332,6 +339,8 @@ int Viewer::render_any()
     }
     else if (m_implicit_demo)
     {
+        handle_implicit_event();
+
         if (m_show_faces_implicit)
         {
             glEnable(GL_POLYGON_OFFSET_FILL);
@@ -371,6 +380,75 @@ int Viewer::render_any()
         }
     }
 
+
+    return 0;
+}
+
+int Viewer::handle_spline_event()
+{
+    if (key_state(SDLK_f))
+    {
+        clear_key_state(SDLK_f);
+        m_show_faces_spline = !m_show_faces_spline;
+    }
+
+    if (key_state(SDLK_e))
+    {
+        clear_key_state(SDLK_e);
+        m_show_edges_spline = !m_show_edges_spline;
+    }
+
+    if (key_state(SDLK_v))
+    {
+        clear_key_state(SDLK_v);
+        m_show_points_spline = !m_show_points_spline;
+    }
+
+    return 0;
+}
+
+int Viewer::handle_patch_event()
+{
+    if (key_state(SDLK_f))
+    {
+        clear_key_state(SDLK_f);
+        m_show_faces_patch = !m_show_faces_patch;
+    }
+
+    if (key_state(SDLK_e))
+    {
+        clear_key_state(SDLK_e);
+        m_show_edges_patch = !m_show_edges_patch;
+    }
+
+    if (key_state(SDLK_v))
+    {
+        clear_key_state(SDLK_v);
+        m_show_points_patch = !m_show_points_patch;
+    }
+
+    return 0;
+}
+
+int Viewer::handle_implicit_event()
+{
+    if (key_state(SDLK_f))
+    {
+        clear_key_state(SDLK_f);
+        m_show_faces_implicit = !m_show_faces_implicit;
+    }
+
+    if (key_state(SDLK_e))
+    {
+        clear_key_state(SDLK_e);
+        m_show_edges_implicit = !m_show_edges_implicit;
+    }
+
+    if (key_state(SDLK_v))
+    {
+        clear_key_state(SDLK_v);
+        m_show_points_implicit = !m_show_points_implicit;
+    }
 
     return 0;
 }
@@ -422,6 +500,7 @@ int Viewer::render_ui()
 
         render_demo_buttons();
 
+        ImGui::SeparatorText("Global Prameters");
         ImGui::SliderFloat("Point size", &m_size_point, 1.f, 50.f, "%.2f");
         ImGui::SliderFloat("Edge size", &m_size_edge, 1.f, 25.f, "%.2f");
         if (m_spline_demo) render_spline_params();
@@ -678,7 +757,7 @@ int Viewer::render_spline_params()
 
 int Viewer::render_implicit_stats()
 {
-    ImGui::SeparatorText("Spline Geometry");
+    ImGui::SeparatorText("Implicit Geometry");
     ImGui::Text("#Triangle : %i ", m_mImplicit->triangle_count());
     ImGui::Text("#vertex : %i ", m_mImplicit->vertex_count());
     ImGui::Text("Poligonize Time : %i ms %i us", m_ipolytms, m_ipolytus);

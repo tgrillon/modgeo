@@ -196,6 +196,22 @@ namespace gm
         Point m_pmin, m_pmax; 
     };  
 
+    class ImplicitPlane final: public ImplicitNode 
+    {
+    public: 
+        ImplicitPlane(const Vector& normal, float h, float lambda = 1.0, IntersectMethod im = IntersectMethod::RAY_MARCHING);
+        ~ImplicitPlane()=default;
+
+        static Ref<ImplicitPlane> create(const Vector& normal, float h, float l= 1.0, IntersectMethod im= IntersectMethod::RAY_MARCHING);
+
+        float value(const Point& p) const override; 
+
+        ImplicitType type() const override;
+        
+    private: 
+        Vector m_normal; 
+        float m_h; 
+    };  
 
     class ImplicitTree final: public ImplicitNode
     {

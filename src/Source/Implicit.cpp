@@ -225,6 +225,27 @@ namespace gm
         return ImplicitType::PRIMITIVE_BOX;
     }
 
+    /************************** Implicit Plane ******************************/
+
+    ImplicitPlane::ImplicitPlane(const Vector &normal, float h, float lambda, IntersectMethod im) : ImplicitNode(lambda, im), m_normal(normal), m_h(h)
+    {
+    }
+
+    Ref<ImplicitPlane> ImplicitPlane::create(const Vector &normal, float h, float l, IntersectMethod im)
+    {
+        return std::make_shared<ImplicitPlane>(normal, h, l, im);
+    }
+
+    float ImplicitPlane::value(const Point &p) const
+    {
+        return dot(Vector(p), m_normal) + m_h;
+    }
+
+    ImplicitType ImplicitPlane::type() const
+    {
+        return ImplicitType::PRIMITIVE_PLANE;
+    }
+
     /************************** Implicit Tree ******************************/
 
     ImplicitTree::ImplicitTree(const Ref<ImplicitNode> &root, float l, IntersectMethod im) : ImplicitNode(l, im), m_root(root)

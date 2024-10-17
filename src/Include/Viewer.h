@@ -32,6 +32,10 @@ private:
     int render_implicit_params();
     int render_any();
 
+    int handle_spline_event();
+    int handle_patch_event();
+    int handle_implicit_event();
+
     int render_menu_bar();
 
 private:

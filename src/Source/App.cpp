@@ -87,9 +87,9 @@ int App::prerender()
         m_camera.write_orbiter(orbiter_filename);
     }
     // paste / read orbiter
-    if (key_state('v'))
+    if (key_state('o'))
     {
-        clear_key_state('v');
+        clear_key_state('o');
 
         Orbiter tmp;
         if (tmp.read_orbiter(orbiter_filename) < 0)
