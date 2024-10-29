@@ -22,19 +22,23 @@ public:
     int quit_imgui() override;
 
 private:
+    int init_demo_patch();
+    int init_demo_spline();
+    int init_demo_sdf();
+
     int render_ui();
     int render_demo_buttons();
-    int render_patch_stats();
-    int render_patch_params();
-    int render_spline_stats();
-    int render_spline_params();
-    int render_sdf_stats();
-    int render_sdf_params();
+    int render_stats_patch();
+    int render_params_patch();
+    int render_stats_spline();
+    int render_params_spline();
+    int render_stats_sdf();
+    int render_params_sdf();
     int render_any();
 
-    int handle_spline_event();
-    int handle_patch_event();
-    int handle_sdf_event();
+    int handle_event_spline();
+    int handle_event_patch();
+    int handle_event_sdf();
 
     int render_menu_bar();
 

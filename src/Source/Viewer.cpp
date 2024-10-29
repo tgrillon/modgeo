@@ -58,92 +58,22 @@ int Viewer::init_any()
     program_print_errors(m_program_edges);
 
     //! Bezier spline intialization
-    std::vector<Point> curve;
-
-    curve = gm::curve_points(m_nb_control_points_spline, [](double t)
-                             { return Point(10 * t, 0, 0); });
-
-    m_line = create_ref<Mesh>(GL_LINE_STRIP);
-    for (const auto &p : curve)
+    if (init_demo_spline() < 0)
     {
-        m_line->vertex(p);
-    }
-
-    m_spline = gm::Revolution::create(curve);
-
-    m_timer.start();
-    m_mSpline = m_spline->polygonize(4);
-    m_timer.stop();
-
-    m_spolytms = m_timer.ms();
-    m_spolytus = m_timer.us();
-
-    if (m_patch_demo)
-    {
-        center_camera(*m_mPatch);
+        utils::error("in [init_demo_spline]");
     }
 
     //! Bezier patch intialization
-    std::vector<std::vector<Point>> surface;
-
-    surface = gm::surface_points(m_nb_control_points_patch, [](double u, double v)
-                                 { return Point(u * 10., sin(10 * v * 2 * M_PI), v * 10); });
-
-    m_grid = create_ref<Mesh>(GL_LINES);
-    for (int h = 1; h < m_nb_control_points_patch; ++h)
+    if (init_demo_patch() < 0)
     {
-        for (int w = 1; w < m_nb_control_points_patch; ++w)
-        {
-            m_grid->vertex(surface[h][w - 1]);
-            m_grid->vertex(surface[h][w]);
-
-            m_grid->vertex(surface[h - 1][w]);
-            m_grid->vertex(surface[h][w]);
-        }
-    }
-
-    m_patch = gm::Bezier::create(surface);
-
-    m_timer.start();
-    m_mPatch = m_patch->polygonize(m_patch_resolution);
-    m_timer.stop();
-
-    m_ppolytms = m_timer.ms();
-    m_ppolytus = m_timer.us();
-
-    if (m_spline_demo)
-    {
-        center_camera(*m_mSpline);
+        utils::error("in [init_demo_patch]");
     }
 
     //! SDF surface initialization
-    m_sdf_root = gm::SDFTorus::create(0.5, 0.2);
-    m_sdf_tree = gm::SDFTree::create(m_sdf_root);
-
-    m_timer.start();
-    m_mSDF = m_sdf_tree->polygonize(m_sdf_resolution, m_sdf_box);
-    m_timer.stop();
-
-    m_ipolytms = m_timer.ms();
-    m_ipolytus = m_timer.us();
-
-    if (m_sdf_demo)
+    if (init_demo_sdf() < 0)
     {
-        center_camera(*m_mSDF_box);
+        utils::error("in [init_demo_sdf]");
     }
-
-    m_mSDF_box = m_sdf_box.get_box(m_sdf_resolution, m_slide_x, m_slide_y, m_slide_z);
-
-    // auto start= std::chrono::high_resolution_clock::now();
-    // m_teapot.load_pacthes(std::string(DATA_DIR) + "/teapot");
-    // m_mTeapot= m_teapot.polygonize(4);
-    // auto stop= std::chrono::high_resolution_clock::now();
-
-    // m_patch_time_polygonize= float(std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count());
-
-    // Point pmin, pmax;
-    // m_mTeapot.bounds(pmin, pmax);
-    // m_camera.lookat(pmin, pmax);
 
     return 0;
 }
@@ -235,6 +165,95 @@ int Viewer::quit_imgui()
     return 0;
 }
 
+int Viewer::init_demo_patch()
+{
+    std::vector<std::vector<Point>> surface;
+
+    surface = gm::surface_points(m_nb_control_points_patch, [](double u, double v)
+                                 { return Point(u * 10., sin(10 * v * 2 * M_PI), v * 10); });
+
+    m_grid = create_ref<Mesh>(GL_LINES);
+    for (int h = 1; h < m_nb_control_points_patch; ++h)
+    {
+        for (int w = 1; w < m_nb_control_points_patch; ++w)
+        {
+            m_grid->vertex(surface[h][w - 1]);
+            m_grid->vertex(surface[h][w]);
+
+            m_grid->vertex(surface[h - 1][w]);
+            m_grid->vertex(surface[h][w]);
+        }
+    }
+
+    m_patch = gm::Bezier::create(surface);
+
+    m_timer.start();
+    m_mPatch = m_patch->polygonize(m_patch_resolution);
+    m_timer.stop();
+
+    m_ppolytms = m_timer.ms();
+    m_ppolytus = m_timer.us();
+
+    if (m_spline_demo)
+    {
+        center_camera(*m_mSpline);
+    }
+
+    return 0;
+}
+
+int Viewer::init_demo_spline()
+{
+    std::vector<Point> curve;
+
+    curve = gm::curve_points(m_nb_control_points_spline, [](double t)
+                             { return Point(10 * t, 0, 0); });
+
+    m_line = create_ref<Mesh>(GL_LINE_STRIP);
+    for (const auto &p : curve)
+    {
+        m_line->vertex(p);
+    }
+
+    m_spline = gm::Revolution::create(curve);
+
+    m_timer.start();
+    m_mSpline = m_spline->polygonize(4);
+    m_timer.stop();
+
+    m_spolytms = m_timer.ms();
+    m_spolytus = m_timer.us();
+
+    if (m_patch_demo)
+    {
+        center_camera(*m_mPatch);
+    }
+
+    return 0;
+}
+
+int Viewer::init_demo_sdf()
+{
+    m_sdf_root = gm::SDFTorus::create(0.5, 0.2);
+    m_sdf_tree = gm::SDFTree::create(m_sdf_root);
+
+    m_timer.start();
+    m_mSDF = m_sdf_tree->polygonize(m_sdf_resolution, m_sdf_box);
+    m_timer.stop();
+
+    m_ipolytms = m_timer.ms();
+    m_ipolytus = m_timer.us();
+
+    if (m_sdf_demo)
+    {
+        center_camera(*m_mSDF_box);
+    }
+
+    m_mSDF_box = m_sdf_box.get_box(m_sdf_resolution, m_slide_x, m_slide_y, m_slide_z);
+
+    return 0;
+}
+
 int Viewer::render_any()
 {
     Transform model = Identity();
@@ -248,7 +267,7 @@ int Viewer::render_any()
 
     if (m_spline_demo)
     {
-        handle_spline_event();
+        handle_event_spline();
 
         if (m_mSpline->has_position())
         {
@@ -293,7 +312,7 @@ int Viewer::render_any()
     }
     else if (m_patch_demo)
     {
-        handle_patch_event();
+        handle_event_patch();
 
         if (m_mPatch->has_position())
         {
@@ -339,7 +358,7 @@ int Viewer::render_any()
     }
     else if (m_sdf_demo)
     {
-        handle_sdf_event();
+        handle_event_sdf();
 
         if (m_mSDF->has_position())
         {
@@ -386,7 +405,7 @@ int Viewer::render_any()
     return 0;
 }
 
-int Viewer::handle_spline_event()
+int Viewer::handle_event_spline()
 {
     if (key_state(SDLK_f))
     {
@@ -409,7 +428,7 @@ int Viewer::handle_spline_event()
     return 0;
 }
 
-int Viewer::handle_patch_event()
+int Viewer::handle_event_patch()
 {
     if (key_state(SDLK_f))
     {
@@ -432,7 +451,7 @@ int Viewer::handle_patch_event()
     return 0;
 }
 
-int Viewer::handle_sdf_event()
+int Viewer::handle_event_sdf()
 {
     if (key_state(SDLK_f))
     {
@@ -514,11 +533,11 @@ int Viewer::render_ui()
         if (ImGui::CollapsingHeader("Params"))
         {
             if (m_spline_demo)
-                render_spline_params();
+                render_params_spline();
             else if (m_patch_demo)
-                render_patch_params();
+                render_params_patch();
             else if (m_sdf_demo)
-                render_sdf_params();
+                render_params_sdf();
         }
         ImGui::End();
 
@@ -535,11 +554,11 @@ int Viewer::render_ui()
         if (ImGui::CollapsingHeader("Geometry"))
         {
             if (m_spline_demo)
-                render_spline_stats();
+                render_stats_spline();
             else if (m_patch_demo)
-                render_patch_stats();
+                render_stats_patch();
             else if (m_sdf_demo)
-                render_sdf_stats();
+                render_stats_sdf();
         }
         ImGui::End();
     }
@@ -614,7 +633,7 @@ int Viewer::render_demo_buttons()
     return 0;
 }
 
-int Viewer::render_patch_stats()
+int Viewer::render_stats_patch()
 {
     //! Statistiques
     ImGui::SeparatorText("GEOMETRY");
@@ -628,7 +647,7 @@ int Viewer::render_patch_stats()
     return 0;
 }
 
-int Viewer::render_patch_params()
+int Viewer::render_params_patch()
 {
     ImVec2 sz = ImVec2(-FLT_MIN, 45.0f);
 
@@ -698,7 +717,7 @@ int Viewer::render_patch_params()
     return 0;
 }
 
-int Viewer::render_spline_stats()
+int Viewer::render_stats_spline()
 {
     ImGui::SeparatorText("GEOMETRY");
     ImGui::Text("#Triangle : %i ", m_mSpline->triangle_count());
@@ -709,7 +728,7 @@ int Viewer::render_spline_stats()
     return 0;
 }
 
-int Viewer::render_spline_params()
+int Viewer::render_params_spline()
 {
     ImVec2 sz = ImVec2(-FLT_MIN, 45.0f);
 
@@ -776,7 +795,7 @@ int Viewer::render_spline_params()
     return 0;
 }
 
-int Viewer::render_sdf_stats()
+int Viewer::render_stats_sdf()
 {
     ImGui::SeparatorText("GEOMETRY");
     ImGui::Text("#Triangle : %i ", m_mSDF->triangle_count());
@@ -785,7 +804,7 @@ int Viewer::render_sdf_stats()
     return 0;
 }
 
-int Viewer::render_sdf_params()
+int Viewer::render_params_sdf()
 {
     ImVec2 sz = ImVec2(-FLT_MIN, 45.0f);
 
