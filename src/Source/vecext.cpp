@@ -54,7 +54,7 @@ Point abs( const Point& a )
 
 float length2(const vec2 &v)
 {
-    return v.x * v.x + v.y + v.y;
+    return v.x * v.x + v.y * v.y;
 }
 
 float length(const vec2 &v)

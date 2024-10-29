@@ -8,7 +8,7 @@ add_executable(${PROJECT_NAME} main.cpp
                                ${SOURCE_DIR}/Timer.cpp
                                ${SOURCE_DIR}/vecext.cpp
                                ${SOURCE_DIR}/Bezier.cpp
-                               ${SOURCE_DIR}/Implicit.cpp
+                               ${SOURCE_DIR}/SDF.cpp
                                ${SOURCE_DIR}/Box.cpp
                                ${SOURCE_DIR}/pch.cpp
 
@@ -20,8 +20,8 @@ add_executable(${PROJECT_NAME} main.cpp
                                ${INCLUDE_DIR}/Bezier.h
                                ${INCLUDE_DIR}/vecext.h
                                ${INCLUDE_DIR}/Box.h
-                               ${INCLUDE_DIR}/Implicit.h
-                               ${INCLUDE_DIR}/utils.h
+                               ${INCLUDE_DIR}/SDF.h
+                               ${INCLUDE_DIR}/Utils.h
                                ${INCLUDE_DIR}/pch.h
                                )
 

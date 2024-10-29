@@ -1,6 +1,6 @@
 #include "App.h"
 
-#include "utils.h"
+#include "Utils.h"
 
 App::App(const int width, const int height, const int major, const int minor, const int samples)
 {

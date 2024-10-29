@@ -189,11 +189,6 @@ namespace gm
         return b + t;
     }
 
-    double lerp(double a, double b, double t)
-    {
-        return (1 - t) * a + t * b;
-    }
-
     Point Spline::point_curve(double t) const
     {
         Point p;

@@ -52,7 +52,7 @@ They are located in the *vendor* directory.
     |   └── shaders             # Shaders utilisés pour le rendu avec GKit.
     ├── src                   # Code 
     |   ├── Include             # Fichiers .h.  
-    |   |   └── utils.h           # Utilitaires
+    |   |   └── Utils.h           # Utilitaires
     |   ├── Source              # Fichiers .cpp.  
     |   └── main.cpp              
     ├── vendor 

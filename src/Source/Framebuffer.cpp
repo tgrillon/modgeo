@@ -1,6 +1,6 @@
 #include "Framebuffer.h"
 
-#include "utils.h"
+#include "Utils.h"
 
 Framebuffer::Framebuffer(unsigned int width, unsigned int height) : m_width(width), m_height(height)
 {

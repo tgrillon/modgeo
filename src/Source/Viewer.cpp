@@ -1,6 +1,6 @@
 #include "Viewer.h"
 
-#include "utils.h"
+#include "Utils.h"
 
 Mesh make_grid(const int n = 10)
 {
@@ -116,29 +116,23 @@ int Viewer::init_any()
         center_camera(*m_mSpline);
     }
 
-    //! Implicit surface initialization
-    Ref<gm::ImplicitNode> root = gm::ImplicitSphere::create({0.0,0.0,0.0}, 2.f);
-    root = gm::ImplicitDifference::create(root, gm::ImplicitSphere::create({0.5, 0.0, 0.0}, 1.6f));
-    // root = gm::ImplicitDifference::create(root, gm::ImplicitPlane::create({0.f, 1.f, 0.f}, 1.f));
-    // root = gm::ImplicitHull::create(root, 0.5f);
-    // root = gm::ImplicitDifference::create(root, gm::ImplicitSphere::create({1.f, 0.f, 0.f}, 2.f));
-    // root = gm::ImplicitHull::create(root, 0.2f);
-
-    m_imp_tree = gm::ImplicitTree::create(root);
+    //! SDF surface initialization
+    m_sdf_root = gm::SDFTorus::create(0.5, 0.2);
+    m_sdf_tree = gm::SDFTree::create(m_sdf_root);
 
     m_timer.start();
-    m_mImplicit = m_imp_tree->polygonize(m_implicit_resolution, m_imp_box);
+    m_mSDF = m_sdf_tree->polygonize(m_sdf_resolution, m_sdf_box);
     m_timer.stop();
-    
+
     m_ipolytms = m_timer.ms();
     m_ipolytus = m_timer.us();
 
-    if (m_implicit_demo)
+    if (m_sdf_demo)
     {
-        center_camera(*m_mImplicit_box);
+        center_camera(*m_mSDF_box);
     }
 
-    m_mImplicit_box = m_imp_box.get_box(m_implicit_resolution, m_slide_x, m_slide_y, m_slide_z);
+    m_mSDF_box = m_sdf_box.get_box(m_sdf_resolution, m_slide_x, m_slide_y, m_slide_z);
 
     // auto start= std::chrono::high_resolution_clock::now();
     // m_teapot.load_pacthes(std::string(DATA_DIR) + "/teapot");
@@ -223,7 +217,7 @@ int Viewer::quit_any()
     m_mPatch->release();
     m_mSpline->release();
     // m_mTeapot->release();
-    m_mImplicit->release();
+    m_mSDF->release();
 
     return 0;
 }
@@ -289,7 +283,7 @@ int Viewer::render_any()
                 glUniform4fv(location, 1, &m_color_point[0]);
 
                 glDrawArrays(GL_POINTS, 0, m_mSpline->vertex_count());
-            } 
+            }
         }
 
         if (m_show_spline_curve)
@@ -334,7 +328,7 @@ int Viewer::render_any()
                 glUniform4fv(location, 1, &m_color_point[0]);
 
                 glDrawArrays(GL_POINTS, 0, m_mPatch->vertex_count());
-            }    
+            }
         }
 
         if (m_show_patch_grid)
@@ -343,18 +337,18 @@ int Viewer::render_any()
         }
         // param.draw(*m_mTeapot);
     }
-    else if (m_implicit_demo)
+    else if (m_sdf_demo)
     {
-        handle_implicit_event();
+        handle_sdf_event();
 
-        if (m_mImplicit->has_position())
+        if (m_mSDF->has_position())
         {
             if (m_show_faces_implicit)
             {
                 glEnable(GL_POLYGON_OFFSET_FILL);
                 glPolygonOffset(1.0, 1.0);
                 glDepthFunc(GL_LESS);
-                param.draw(*m_mImplicit);
+                param.draw(*m_mSDF);
                 glDisable(GL_POLYGON_OFFSET_FILL);
             }
 
@@ -367,7 +361,7 @@ int Viewer::render_any()
                 GLint location = glGetUniformLocation(m_program_edges, "uEdgeColor");
                 glUniform4fv(location, 1, &m_color_edge[0]);
 
-                m_mImplicit->draw(m_program_edges, true, false, false, false, false);
+                m_mSDF->draw(m_program_edges, true, false, false, false, false);
             }
 
             if (m_show_points_implicit)
@@ -379,16 +373,15 @@ int Viewer::render_any()
                 GLint location = glGetUniformLocation(m_program_points, "uPointColor");
                 glUniform4fv(location, 1, &m_color_point[0]);
 
-                glDrawArrays(GL_POINTS, 0, m_mImplicit->vertex_count());
-            }    
+                glDrawArrays(GL_POINTS, 0, m_mSDF->vertex_count());
+            }
         }
 
-        if (m_show_implicit_box)
+        if (m_show_sdf_box)
         {
-            param.draw(*m_mImplicit_box);
+            param.draw(*m_mSDF_box);
         }
     }
-
 
     return 0;
 }
@@ -439,7 +432,7 @@ int Viewer::handle_patch_event()
     return 0;
 }
 
-int Viewer::handle_implicit_event()
+int Viewer::handle_sdf_event()
 {
     if (key_state(SDLK_f))
     {
@@ -508,28 +501,46 @@ int Viewer::render_ui()
         ImGui::Begin("Parameters");
 
         render_demo_buttons();
-
-        ImGui::SeparatorText("Global Prameters");
-        ImGui::SliderFloat("Point size", &m_size_point, 1.f, 50.f, "%.2f");
-        ImGui::SliderFloat("Edge size", &m_size_edge, 1.f, 25.f, "%.2f");
-        if (m_spline_demo) render_spline_params();
-        else if (m_patch_demo) render_patch_params();
-        else if (m_implicit_demo) render_implicit_params();
-        ImGui::ColorPicker3("Point color", &m_color_point[0]);
-        ImGui::ColorPicker3("Edge color", &m_color_edge[0]);
+        if (ImGui::CollapsingHeader("Global"))
+        {
+            ImGui::SliderFloat("Point size", &m_size_point, 1.f, 50.f, "%.2f");
+            ImGui::SliderFloat("Edge size", &m_size_edge, 1.f, 25.f, "%.2f");
+            if (ImGui::CollapsingHeader("Colors"))
+            {
+                ImGui::ColorPicker3("Point color", &m_color_point[0]);
+                ImGui::ColorPicker3("Edge color", &m_color_edge[0]);
+            }
+        }
+        if (ImGui::CollapsingHeader("Params"))
+        {
+            if (m_spline_demo)
+                render_spline_params();
+            else if (m_patch_demo)
+                render_patch_params();
+            else if (m_sdf_demo)
+                render_sdf_params();
+        }
         ImGui::End();
 
         ImGui::Begin("Statistiques");
-        ImGui::SeparatorText("Performances");
-        auto [cpums, cpuus] = cpu_time();
-        auto [gpums, gpuus] = gpu_time();
-        ImGui::Text("fps : %.2f ", (1000.f / delta_time()));
-        ImGui::Text("cpu : %i ms %i us ", cpums, cpuus);
-        ImGui::Text("gpu : %i ms %i us", gpums, gpuus);
-        ImGui::Text("total : %.2f ms", delta_time());
-        if (m_spline_demo) render_spline_stats();
-        else if (m_patch_demo) render_patch_stats();
-        else if (m_implicit_demo) render_implicit_stats();
+        if (ImGui::CollapsingHeader("Performances"))
+        {
+            auto [cpums, cpuus] = cpu_time();
+            auto [gpums, gpuus] = gpu_time();
+            ImGui::Text("fps : %.2f ", (1000.f / delta_time()));
+            ImGui::Text("cpu : %i ms %i us ", cpums, cpuus);
+            ImGui::Text("gpu : %i ms %i us", gpums, gpuus);
+            ImGui::Text("total : %.2f ms", delta_time());
+        }
+        if (ImGui::CollapsingHeader("Geometry"))
+        {
+            if (m_spline_demo)
+                render_spline_stats();
+            else if (m_patch_demo)
+                render_patch_stats();
+            else if (m_sdf_demo)
+                render_sdf_stats();
+        }
         ImGui::End();
     }
 
@@ -549,53 +560,56 @@ int Viewer::render_demo_buttons()
 {
     ImVec2 sz = ImVec2(-FLT_MIN, 45.0f);
 
-    //! Spline demo widget
-    ImGui::BeginDisabled(m_spline_demo);
-    if (ImGui::Button("Spline Demo", sz) && !m_spline_demo)
+    if (ImGui::CollapsingHeader("Menu"))
     {
-        m_patch_demo = false;
-        m_spline_demo = true;
-        m_implicit_demo = false;
+        //! Spline demo widget
+        ImGui::BeginDisabled(m_spline_demo);
+        if (ImGui::Button("Spline Demo", sz) && !m_spline_demo)
+        {
+            m_patch_demo = false;
+            m_spline_demo = true;
+            m_sdf_demo = false;
 
-        center_camera(*m_mSpline);
-    }
-    if (ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip))
-    {
-        ImGui::SetTooltip(!m_spline_demo ? "Activate spline demo." : "Spline demo is active.");
-    }
-    ImGui::EndDisabled();
+            center_camera(*m_mSpline);
+        }
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip))
+        {
+            ImGui::SetTooltip(!m_spline_demo ? "Activate spline demo." : "Spline demo is active.");
+        }
+        ImGui::EndDisabled();
 
-    //! Patch demo widget
-    ImGui::BeginDisabled(m_patch_demo);
-    if (ImGui::Button("Patch Demo", sz) && !m_patch_demo)
-    {
-        m_patch_demo = true;
-        m_spline_demo = false;
-        m_implicit_demo = false;
+        //! Patch demo widget
+        ImGui::BeginDisabled(m_patch_demo);
+        if (ImGui::Button("Patch Demo", sz) && !m_patch_demo)
+        {
+            m_patch_demo = true;
+            m_spline_demo = false;
+            m_sdf_demo = false;
 
-        center_camera(*m_mPatch);
-    }
-    if (ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip))
-    {
-        ImGui::SetTooltip(!m_patch_demo ? "Activate patch demo." : "Patch demo is active.");
-    }
-    ImGui::EndDisabled();
+            center_camera(*m_mPatch);
+        }
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip))
+        {
+            ImGui::SetTooltip(!m_patch_demo ? "Activate patch demo." : "Patch demo is active.");
+        }
+        ImGui::EndDisabled();
 
-    //! Implicit demo widget
-    ImGui::BeginDisabled(m_implicit_demo);
-    if (ImGui::Button("Implicit Demo", sz) && !m_implicit_demo)
-    {
-        m_patch_demo = false;
-        m_spline_demo = false;
-        m_implicit_demo = true;
+        //! SDF demo widget
+        ImGui::BeginDisabled(m_sdf_demo);
+        if (ImGui::Button("SDF Demo", sz) && !m_sdf_demo)
+        {
+            m_patch_demo = false;
+            m_spline_demo = false;
+            m_sdf_demo = true;
 
-        center_camera(*m_mImplicit_box);
+            center_camera(*m_mSDF_box);
+        }
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip))
+        {
+            ImGui::SetTooltip(!m_sdf_demo ? "Activate patch demo." : "Patch demo is active.");
+        }
+        ImGui::EndDisabled(); 
     }
-    if (ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip))
-    {
-        ImGui::SetTooltip(!m_implicit_demo ? "Activate patch demo." : "Patch demo is active.");
-    }
-    ImGui::EndDisabled();
 
     return 0;
 }
@@ -603,7 +617,7 @@ int Viewer::render_demo_buttons()
 int Viewer::render_patch_stats()
 {
     //! Statistiques
-    ImGui::SeparatorText("Patch Geometry");
+    ImGui::SeparatorText("GEOMETRY");
     // ImGui::Text("#Triangle : %i ", m_mTeapot->triangle_count());
     ImGui::Text("#Triangle : %i ", m_mPatch->triangle_count());
     // ImGui::Text("#vertex : %i ", m_mTeapot->vertex_count());
@@ -618,7 +632,6 @@ int Viewer::render_patch_params()
 {
     ImVec2 sz = ImVec2(-FLT_MIN, 45.0f);
 
-    ImGui::SeparatorText("Bézier Patch");
     ImGui::SliderInt("Resolution", &m_patch_resolution, 4, 1000);
     ImGui::SliderInt("#Control points", &m_nb_control_points_patch, 4, 31);
     ImGui::Text("You can use the two variables 'u' and 'v' in each expression below :");
@@ -687,7 +700,7 @@ int Viewer::render_patch_params()
 
 int Viewer::render_spline_stats()
 {
-    ImGui::SeparatorText("Spline Geometry");
+    ImGui::SeparatorText("GEOMETRY");
     ImGui::Text("#Triangle : %i ", m_mSpline->triangle_count());
     ImGui::Text("#vertex : %i ", m_mSpline->vertex_count());
     ImGui::Text("#Control points : %i ", m_spline->point_count());
@@ -700,7 +713,6 @@ int Viewer::render_spline_params()
 {
     ImVec2 sz = ImVec2(-FLT_MIN, 45.0f);
 
-    ImGui::SeparatorText("Bézier Spline");
     ImGui::SliderInt("Resolution", &m_spline_resolution, 3, 1000);
     ImGui::SliderInt("#Control points", &m_nb_control_points_spline, 2, 31);
     ImGui::Text("You can use a variable 't' in each expression below :");
@@ -746,7 +758,7 @@ int Viewer::render_spline_params()
 
         m_spline = gm::Revolution::create(curve);
         m_spline->radial_fun([&](double t_val, double a_val)
-                            {
+                             {
                         set_double_variable_value(m_expr_spline, "t", t_val);
                         set_double_variable_value(m_expr_spline, "a", a_val);
                         return get_evaluated_value(m_expr_spline, 3); });
@@ -764,63 +776,54 @@ int Viewer::render_spline_params()
     return 0;
 }
 
-int Viewer::render_implicit_stats()
+int Viewer::render_sdf_stats()
 {
-    ImGui::SeparatorText("Implicit Geometry");
-    ImGui::Text("#Triangle : %i ", m_mImplicit->triangle_count());
-    ImGui::Text("#vertex : %i ", m_mImplicit->vertex_count());
+    ImGui::SeparatorText("GEOMETRY");
+    ImGui::Text("#Triangle : %i ", m_mSDF->triangle_count());
+    ImGui::Text("#vertex : %i ", m_mSDF->vertex_count());
     ImGui::Text("Poligonize Time : %i ms %i us", m_ipolytms, m_ipolytus);
     return 0;
 }
 
-int Viewer::render_implicit_params()
+int Viewer::render_sdf_params()
 {
     ImVec2 sz = ImVec2(-FLT_MIN, 45.0f);
 
-    ImGui::SeparatorText("Implicit Surface");
-    if (ImGui::SliderInt("Resolution", &m_implicit_resolution, 3, 1000))
+    ImGui::SeparatorText("SDF TREE");
+    build_sdf_tree();
+
+    if (ImGui::SliderInt("Resolution", &m_sdf_resolution, 3, 1000))
     {
         m_slide_x = 0;
         m_slide_y = 0;
         m_slide_z = 0;
     }
-    if (ImGui::SliderInt("Box slide x", &m_slide_x, 0, m_implicit_resolution))
+    if (ImGui::CollapsingHeader("SDF Space"))
     {
-        m_mImplicit_box = m_imp_box.get_box(m_implicit_resolution, m_slide_x, m_slide_y, m_slide_z);
+        if (ImGui::SliderInt("Box slide x", &m_slide_x, 0, m_sdf_resolution))
+        {
+            m_mSDF_box = m_sdf_box.get_box(m_sdf_resolution, m_slide_x, m_slide_y, m_slide_z);
+        }
+        if (ImGui::SliderInt("Box slide y", &m_slide_y, 0, m_sdf_resolution))
+        {
+            m_mSDF_box = m_sdf_box.get_box(m_sdf_resolution, m_slide_x, m_slide_y, m_slide_z);
+        }
+        if (ImGui::SliderInt("Box slide z", &m_slide_z, 0, m_sdf_resolution))
+        {
+            m_mSDF_box = m_sdf_box.get_box(m_sdf_resolution, m_slide_x, m_slide_y, m_slide_z);
+        }
+        ImGui::SliderFloat3("Pmin box", pmin, -10.f, 10.f, "%.2f");
+        ImGui::SliderFloat3("Pmax box", pmax, -10.f, 10.f, "%.2f");
     }
-    if (ImGui::SliderInt("Box slide y", &m_slide_y, 0, m_implicit_resolution))
-    {
-        m_mImplicit_box = m_imp_box.get_box(m_implicit_resolution, m_slide_x, m_slide_y, m_slide_z);
-    }
-    if (ImGui::SliderInt("Box slide z", &m_slide_z, 0, m_implicit_resolution))
-    {
-        m_mImplicit_box = m_imp_box.get_box(m_implicit_resolution, m_slide_x, m_slide_y, m_slide_z);
-    }
-    ImGui::SliderFloat3("Pmin box", pmin, -10.f, 10.f, "%.2f");
-    ImGui::SliderFloat3("Pmax box", pmax, -10.f, 10.f, "%.2f");
     ImGui::Checkbox("Faces", &m_show_faces_implicit);
     ImGui::SameLine();
     ImGui::Checkbox("Edges", &m_show_edges_implicit);
     ImGui::SameLine();
     ImGui::Checkbox("Points", &m_show_points_implicit);
     ImGui::SameLine();
-    ImGui::Checkbox("implicit box", &m_show_implicit_box);
-    if (ImGui::Button("Render", sz))
-    {
-        m_imp_box.a({pmin[0], pmin[1], pmin[2]});
-        m_imp_box.b({pmax[0], pmax[1], pmax[2]});
+    ImGui::Checkbox("implicit space", &m_show_sdf_box);
 
-        m_mImplicit_box = m_imp_box.get_box(m_implicit_resolution, m_slide_x, m_slide_y, m_slide_z);
-
-        m_timer.start();
-        m_mImplicit = m_imp_tree->polygonize(m_implicit_resolution, m_imp_box);
-        m_timer.stop();
-
-        m_ipolytms = m_timer.ms();
-        m_ipolytus = m_timer.us();
-
-        center_camera(*m_mImplicit_box);
-    }
+    render_sdf_node_ui();
 
     return 0;
 }
@@ -852,4 +855,222 @@ int Viewer::render_menu_bar()
     // ImGui::ShowDemoWindow();
 
     return 0;
+}
+
+void Viewer::set_sdf_primitive()
+{
+    ImGui::Text("Selected Primitive : %s", (m_sdf_node ? gm::type_str(m_sdf_node->type()) : "NULL"));
+    ImGui::Text("Selected Operator : %s", (m_sdf_root ? gm::type_str(m_sdf_root->type()) : "NULL"));
+    if (ImGui::CollapsingHeader("Select Primitive"))
+    {
+        if (ImGui::TreeNode("Sphere"))
+        {
+            static float radius = 1.0f;
+            ImGui::InputFloat("Radius", &radius);
+
+            if (ImGui::Button("Add Sphere"))
+            {
+                m_sdf_node = gm::SDFSphere::create({0, 0, 0}, radius);
+            }
+            ImGui::TreePop();
+        }
+
+        if (ImGui::TreeNode("Box"))
+        {
+            static float pmin[3] = {-1.0, -1.0, -1.0}, pmax[3] = {1.0, 1.0, 1.0};
+            ImGui::InputFloat3("Min Point", &pmin[0]);
+            ImGui::InputFloat3("Max Point", &pmax[0]);
+
+            if (ImGui::Button("Add Box"))
+            {
+                m_sdf_node = gm::SDFBox::create({pmin[0], pmin[1], pmin[2]}, {pmax[0], pmax[1], pmax[2]});
+            }
+            ImGui::TreePop();
+        }
+
+        if (ImGui::TreeNode("Torus"))
+        {
+            static float R, r;
+            ImGui::InputFloat("R", &R);
+            ImGui::InputFloat("r", &r);
+
+            if (ImGui::Button("Add Torus"))
+            {
+                m_sdf_node = gm::SDFTorus::create(R, r);
+            }
+            ImGui::TreePop();
+        }
+
+        if (ImGui::TreeNode("Plane"))
+        {
+            static float n[3] = {0.0, 1.0, 0.0};
+            static float h = 1.0;
+            ImGui::InputFloat3("normal", &n[0]);
+            ImGui::InputFloat("h", &h);
+            if (ImGui::Button("Add Plane"))
+            {
+                m_sdf_node = gm::SDFPlane::create({n[0], n[1], n[2]}, h);
+            }
+            ImGui::TreePop();
+        }
+    }
+}
+
+void Viewer::set_sdf_operator()
+{
+    if (ImGui::CollapsingHeader("Select Operator"))
+    {
+        if (ImGui::TreeNode("Union"))
+        {
+            if (ImGui::Button("Add Union"))
+            {
+                m_sdf_root = gm::SDFUnion::create(m_sdf_root, m_sdf_node);
+            }
+            ImGui::TreePop();
+        }
+        if (ImGui::TreeNode("Intersection"))
+        {
+            if (ImGui::Button("Add Intersection"))
+            {
+                m_sdf_root = gm::SDFIntersection::create(m_sdf_root, m_sdf_node);
+            }
+            ImGui::TreePop();
+        }
+        if (ImGui::TreeNode("Substraction"))
+        {
+            if (ImGui::Button("Add Substraction"))
+            {
+                m_sdf_root = gm::SDFSubstraction::create(m_sdf_root, m_sdf_node);
+            }
+            ImGui::TreePop();
+        }
+        if (ImGui::TreeNode("Smooth Union"))
+        {
+            ImGui::SliderFloat("K (smooth constante)", &m_smooth_k, 0.f, 1.f);
+            if (ImGui::Button("Add Smooth Union"))
+            {
+                m_sdf_root = gm::SDFSmoothUnion::create(m_sdf_root, m_sdf_node, m_smooth_k);
+            }
+            ImGui::TreePop();
+        }
+        if (ImGui::TreeNode("Smooth Intersection"))
+        {
+            ImGui::SliderFloat("K (smooth constante)", &m_smooth_k, 0.f, 1.f);
+            if (ImGui::Button("Add Smooth Intersection"))
+            {
+                m_sdf_root = gm::SDFSmoothIntersection::create(m_sdf_root, m_sdf_node, m_smooth_k);
+            }
+            ImGui::TreePop();
+        }
+        if (ImGui::TreeNode("Smooth Substraction"))
+        {
+            ImGui::SliderFloat("K (smooth constante)", &m_smooth_k, 0.f, 1.f);
+            if (ImGui::Button("Add Smooth Substraction"))
+            {
+                m_sdf_root = gm::SDFSmoothSubstraction::create(m_sdf_root, m_sdf_node, m_smooth_k);
+            }
+            ImGui::TreePop();
+        }
+        if (ImGui::TreeNode("Hull"))
+        {
+            static float thickness = 0.1f;
+            ImGui::InputFloat("Thickness", &thickness);
+            if (ImGui::Button("Add Hull"))
+            {
+                m_sdf_root = gm::SDFHull::create(m_sdf_root, thickness);
+            }
+            ImGui::TreePop();
+        }
+    }
+}
+
+void Viewer::build_sdf_tree()
+{
+    if (ImGui::CollapsingHeader("Build Tree"))
+    {
+        set_sdf_primitive();
+        set_sdf_operator();
+    }
+
+    if (ImGui::CollapsingHeader("Modify Tree"))
+    {
+        render_node_ui(m_sdf_tree->root());
+    }
+}
+
+void Viewer::render_node_ui(Ref<gm::SDFNode> &node)
+{
+    if (!node)
+        return;
+
+    if (ImGui::TreeNode(type_str(node->type())))
+    {
+        if (auto sphere = dynamic_cast<gm::SDFSphere *>(node.get()))
+        {
+            ImGui::InputFloat("Radius", &sphere->radius());
+        }
+        else if (auto box = dynamic_cast<gm::SDFBox *>(node.get()))
+        {
+            ImGui::InputFloat3("Min Point", &box->pmin());
+            ImGui::InputFloat3("Max Point", &box->pmax());
+        }
+        else if (auto torus = dynamic_cast<gm::SDFTorus *>(node.get()))
+        {
+            ImGui::InputFloat("R", &torus->R());
+            ImGui::InputFloat("r", &torus->r());
+        }
+        else if (auto plane = dynamic_cast<gm::SDFPlane *>(node.get()))
+        {
+            ImGui::InputFloat3("normal", &plane->normal());
+            ImGui::InputFloat("h", &plane->h());
+        }
+        else if (auto smoothOP = dynamic_cast<gm::SDFSmoothBinaryOperator *>(node.get()))
+        {
+            ImGui::SliderFloat("k", &smoothOP->k(), 0.f, 1.f);
+        }
+        else if (auto hull = dynamic_cast<gm::SDFHull *>(node.get()))
+        {
+            ImGui::InputFloat("k", &hull->thickness());
+        }
+
+        auto [left, right] = node->children();
+        render_node_ui(left);
+        render_node_ui(right);
+        ImGui::TreePop();
+    }
+}
+
+void Viewer::render_sdf_node_ui()
+{
+    if (ImGui::Button("Render Tree"))
+    {
+        if (!m_sdf_root && m_sdf_node) m_sdf_root = m_sdf_node;
+
+        if (m_sdf_root)
+        {
+            m_sdf_box.a({pmin[0], pmin[1], pmin[2]});
+            m_sdf_box.b({pmax[0], pmax[1], pmax[2]});
+
+            m_mSDF_box = m_sdf_box.get_box(m_sdf_resolution, m_slide_x, m_slide_y, m_slide_z);
+
+            m_sdf_tree->root() = m_sdf_root; 
+
+            m_timer.start();
+            m_mSDF = m_sdf_tree->polygonize(m_sdf_resolution, m_sdf_box);
+            m_timer.stop();
+
+            m_ipolytms = m_timer.ms();
+            m_ipolytus = m_timer.us();
+
+            center_camera(*m_mSDF_box);
+        }
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Clear Tree"))
+    {
+        m_sdf_root = nullptr;
+        m_sdf_node = nullptr;
+        m_sdf_tree->root() = nullptr;
+        m_mSDF->clear();
+    }
 }

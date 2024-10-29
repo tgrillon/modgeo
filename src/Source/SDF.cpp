@@ -1,32 +1,32 @@
-#include "Implicit.h"
+#include "SDF.h"
 
 namespace gm
 {
-    const float ImplicitNode::s_epsilon = 0.0001f;
-    const int ImplicitNode::s_limit = 10000;
+    const float SDFNode::s_epsilon = 0.0001f;
+    const int SDFNode::s_limit = 10000;
 
     Point Ray::point(float t) const
     {
         return origin + direction * t;
     }
 
-    /********************** Implicit Node ************************/
+    /********************** SDF Node ************************/
 
-    ImplicitNode::ImplicitNode(float lambda, IntersectMethod method) : m_intersect_method(method), m_lambda(lambda)
+    SDFNode::SDFNode(float lambda, IntersectMethod method) : m_intersect_method(method), m_lambda(lambda)
     {
     }
 
-    float ImplicitNode::value(const Point &p) const
+    float SDFNode::value(const Point &p) const
     {
         return FLT_MAX;
     }
 
-    bool ImplicitNode::inside(const Point &p) const
+    bool SDFNode::inside(const Point &p) const
     {
         return value(p) < 0.0;
     }
 
-    Vector ImplicitNode::gradient(const Point &p) const
+    Vector SDFNode::gradient(const Point &p) const
     {
         //! finite difference solution
         float x = value({p.x + s_epsilon, p.y, p.z}) - value({p.x - s_epsilon, p.y, p.z});
@@ -36,7 +36,7 @@ namespace gm
         return Vector(x, y, z) / (2 * s_epsilon);
     }
 
-    bool ImplicitNode::intersect(const Ray &ray, float t) const
+    bool SDFNode::intersect(const Ray &ray, float t) const
     {
         switch (m_intersect_method)
         {
@@ -49,12 +49,27 @@ namespace gm
         return false;
     }
 
-    void ImplicitNode::intersect_method(IntersectMethod method)
+    void SDFNode::intersect_method(IntersectMethod method)
     {
         m_intersect_method = method;
     }
 
-    bool ImplicitNode::intersect_ray_marching(const Ray &ray, float eps) const
+    Ref<SDFNode> SDFNode::left() 
+    {
+        return nullptr;
+    }
+
+    Ref<SDFNode> SDFNode::right() 
+    {
+        return nullptr;
+    }
+
+    std::pair<Ref<SDFNode>, Ref<SDFNode>> SDFNode::children() 
+    {
+        return { left(), right() };
+    }
+
+    bool SDFNode::intersect_ray_marching(const Ray &ray, float eps) const
     {
         float t = 0.0;
         Point point;
@@ -69,7 +84,7 @@ namespace gm
         return false;
     }
 
-    bool ImplicitNode::intersect_sphere_tracing(const Ray &ray, float eps) const
+    bool SDFNode::intersect_sphere_tracing(const Ray &ray, float eps) const
     {
         float t = 0.0;
         Point point;
@@ -85,203 +100,359 @@ namespace gm
         return false;
     }
 
-    /********************** Implicit Unary Operator ************************/
+    /********************** SDF Unary Operator ************************/
 
-    ImplicitUnaryOperator::ImplicitUnaryOperator(const Ref<ImplicitNode> &n) : ImplicitNode(), m_node(n)
+    SDFUnaryOperator::SDFUnaryOperator(const Ref<SDFNode> &n) : SDFNode(), m_node(n)
     {
     }
 
-    /********************** Implicit Hull ************************/
+    Ref<SDFNode> SDFUnaryOperator::left() 
+    {
+        return m_node;
+    }
 
-    ImplicitHull::ImplicitHull(const Ref<ImplicitNode>& n, float thickness) : ImplicitUnaryOperator(n), m_thickness(thickness)
+    Ref<SDFNode> SDFUnaryOperator::right() 
+    {
+        return nullptr;
+    }
+
+    /********************** SDF Hull ************************/
+
+    SDFHull::SDFHull(const Ref<SDFNode>& n, float thickness) : SDFUnaryOperator(n), m_thickness(thickness)
     {
     }
 
-    Ref<ImplicitHull> ImplicitHull::create(const Ref<ImplicitNode> &n, float thickness)
+    Ref<SDFHull> SDFHull::create(const Ref<SDFNode> &n, float thickness)
     {
-        return create_ref<ImplicitHull>(n, thickness);
+        return create_ref<SDFHull>(n, thickness);
     }
 
-    float ImplicitHull::value(const Point &p) const
+    float SDFHull::value(const Point &p) const
     {
         return abs(m_node->value(p)) - m_thickness * 0.5;
     }
 
-    ImplicitType ImplicitHull::type() const
+    SDFType SDFHull::type() const
     {
-        return ImplicitType::UNARY_OPERATOR_HULL;
+        return SDFType::UNARY_OPERATOR_HULL;
     }
 
-    /********************** Implicit Binary Operator ************************/
+    float& SDFHull::thickness()
+    {
+        return m_thickness; 
+    }
 
-    ImplicitBinaryOperator::ImplicitBinaryOperator(const Ref<ImplicitNode> &left, const Ref<ImplicitNode> &right) : ImplicitNode(), m_left(left), m_right(right)
+    /********************** SDF Binary Operator ************************/
+
+    SDFBinaryOperator::SDFBinaryOperator(const Ref<SDFNode> &left, const Ref<SDFNode> &right) : SDFNode(), m_left(left), m_right(right)
     {
     }
 
-    /*************************** Implicit Union *****************************/
+    Ref<SDFNode> SDFBinaryOperator::left() 
+    {
+        return m_left;
+    }
 
-    ImplicitUnion::ImplicitUnion(const Ref<ImplicitNode> &left, const Ref<ImplicitNode> &right) : ImplicitBinaryOperator(left, right)
+    Ref<SDFNode> SDFBinaryOperator::right() 
+    {
+        return m_right;
+    }
+
+    /********************** SDF Smooth Binary Operator ************************/
+
+    SDFSmoothBinaryOperator::SDFSmoothBinaryOperator(const Ref<SDFNode> &l, const Ref<SDFNode> &r, float k) : SDFBinaryOperator(l, r), m_k(k)
     {
     }
 
-    Ref<ImplicitUnion> ImplicitUnion::create(const Ref<ImplicitNode> &l, const Ref<ImplicitNode> &r)
+    float& SDFSmoothBinaryOperator::k()
     {
-        return create_ref<ImplicitUnion>(l, r);
+        return m_k;
     }
 
-    float ImplicitUnion::value(const Point &p) const
+    /*************************** SDF Union *****************************/
+
+    SDFUnion::SDFUnion(const Ref<SDFNode> &left, const Ref<SDFNode> &right) : SDFBinaryOperator(left, right)
+    {
+    }
+
+    Ref<SDFUnion> SDFUnion::create(const Ref<SDFNode> &l, const Ref<SDFNode> &r)
+    {
+        return create_ref<SDFUnion>(l, r);
+    }
+
+    float SDFUnion::value(const Point &p) const
     {
         return std::min(m_left->value(p), m_right->value(p));
     }
 
-    ImplicitType ImplicitUnion::type() const
+    SDFType SDFUnion::type() const
     {
-        return ImplicitType::BINARY_OPERATOR_UNION;
+        return SDFType::BINARY_OPERATOR_UNION;
     }
 
-    /************************** Implicit Intersection ****************************/
+    /************************** SDF Intersection ****************************/
 
-    ImplicitIntersection::ImplicitIntersection(const Ref<ImplicitNode> &l, const Ref<ImplicitNode> &r) : ImplicitBinaryOperator(l, r)
+    SDFIntersection::SDFIntersection(const Ref<SDFNode> &l, const Ref<SDFNode> &r) : SDFBinaryOperator(l, r)
     {
     }
 
-    Ref<ImplicitIntersection> ImplicitIntersection::create(const Ref<ImplicitNode> &l, const Ref<ImplicitNode> &r)
+    Ref<SDFIntersection> SDFIntersection::create(const Ref<SDFNode> &l, const Ref<SDFNode> &r)
     {
-        return create_ref<ImplicitIntersection>(l, r);
+        return create_ref<SDFIntersection>(l, r);
     }
 
-    float ImplicitIntersection::value(const Point &p) const
+    float SDFIntersection::value(const Point &p) const
     {
         return std::max(m_left->value(p), m_right->value(p));
     }
 
-    ImplicitType ImplicitIntersection::type() const
+    SDFType SDFIntersection::type() const
     {
-        return ImplicitType::BINARY_OPERATOR_INTERSECTION;
+        return SDFType::BINARY_OPERATOR_INTERSECTION;
     }
 
-    /************************** Implicit Difference ****************************/
+    /************************** SDF Substraction ****************************/
 
-    ImplicitDifference::ImplicitDifference(const Ref<ImplicitNode> &l, const Ref<ImplicitNode> &r) : ImplicitBinaryOperator(l, r)
-    {
-    }
-
-    Ref<ImplicitDifference> ImplicitDifference::create(const Ref<ImplicitNode> &l, const Ref<ImplicitNode> &r)
-    {
-        return create_ref<ImplicitDifference>(l, r);
-    }
-
-    float ImplicitDifference::value(const Point &p) const
-    {
-        return std::max(m_left->value(p), -m_right->value(p));
-    }
-
-    ImplicitType ImplicitDifference::type() const
-    {
-        return ImplicitType::BINARY_OPERATOR_DIFFERENCE;
-    }
-
-    /************************** Implicit Sphere ****************************/
-
-    ImplicitSphere::ImplicitSphere(const Point &c, float r, float l, IntersectMethod im) : ImplicitNode(l, im), m_center(c), m_radius(r)
+    SDFSubstraction::SDFSubstraction(const Ref<SDFNode> &l, const Ref<SDFNode> &r) : SDFBinaryOperator(l, r)
     {
     }
 
-    Ref<ImplicitSphere> ImplicitSphere::create(const Point &c, float r, float l, IntersectMethod im)
+    Ref<SDFSubstraction> SDFSubstraction::create(const Ref<SDFNode> &l, const Ref<SDFNode> &r)
     {
-        return create_ref<ImplicitSphere>(c, r, l, im);
+        return create_ref<SDFSubstraction>(l, r);
     }
 
-    float ImplicitSphere::value(const Point &p) const
+    float SDFSubstraction::value(const Point &p) const
+    {
+        return std::max(-m_left->value(p), m_right->value(p));
+    }
+
+    SDFType SDFSubstraction::type() const
+    {
+        return SDFType::BINARY_OPERATOR_SUBSTRACTION;
+    }
+
+    /************************** SDF Smooth Union ****************************/
+
+    SDFSmoothUnion::SDFSmoothUnion(const Ref<SDFNode> &l, const Ref<SDFNode> &r, float k) : SDFSmoothBinaryOperator(l, r, k)
+    {
+    }
+
+    Ref<SDFSmoothUnion> SDFSmoothUnion::create(const Ref<SDFNode> &l, const Ref<SDFNode> &r, float k)
+    {
+        return std::make_shared<SDFSmoothUnion>(l, r, k);
+    }
+
+    float SDFSmoothUnion::value(const Point &p) const
+    {
+        float fA = m_left->value(p);
+        float fB = m_right->value(p);
+        float h = std::max(m_k - abs(fA-fB), 0.f);
+
+        return std::min(fA, fB) - h * h * 0.25 / m_k;
+    }
+
+    SDFType SDFSmoothUnion::type() const
+    {
+        return SDFType::BINARY_OPERATOR_SMOOTH_UNION;
+    }
+
+    /************************** SDF Smooth Intersection ****************************/
+
+    SDFSmoothIntersection::SDFSmoothIntersection(const Ref<SDFNode> &l, const Ref<SDFNode> &r, float k) : SDFSmoothBinaryOperator(l, r, k)
+    {
+    }
+
+    Ref<SDFSmoothIntersection> SDFSmoothIntersection::create(const Ref<SDFNode> &l, const Ref<SDFNode> &r, float k)
+    {
+        return std::make_shared<SDFSmoothIntersection>(l, r, k);
+    }
+
+    float SDFSmoothIntersection::value(const Point &p) const
+    {
+        float fA = m_left->value(p);
+        float fB = m_right->value(p);
+        float h = std::max(m_k - abs(fA - fB), 0.f);
+
+        return std::max(fA, fB) + h * h * 0.25 / m_k;
+    }
+
+    SDFType SDFSmoothIntersection::type() const
+    {
+        return SDFType::BINARY_OPERATOR_SMOOTH_INTERSECTION;
+    }
+
+    /************************** SDF Smooth Substraction ****************************/
+
+    SDFSmoothSubstraction::SDFSmoothSubstraction(const Ref<SDFNode> &l, const Ref<SDFNode> &r, float k) : SDFSmoothBinaryOperator(l, r, k)
+    {
+    }
+
+    Ref<SDFSmoothSubstraction> SDFSmoothSubstraction::create(const Ref<SDFNode> &l, const Ref<SDFNode> &r, float k)
+    {
+        return create_ref<SDFSmoothSubstraction>(l, r, k);
+    }
+
+    float SDFSmoothSubstraction::value(const Point &p) const
+    {
+        float fA = m_left->value(p);
+        float fB = m_right->value(p);
+        float h = std::max(m_k - abs(-fA - fB), 0.f);
+
+        return std::max(-fA, fB) + h * h * 0.25 / m_k;
+    }
+
+    SDFType SDFSmoothSubstraction::type() const
+    {
+        return SDFType::BINARY_OPERATOR_SMOOTH_SUBSTRACTION;
+    }
+
+    /************************** SDF Sphere ****************************/
+
+    SDFSphere::SDFSphere(const Point &c, float r, float l, IntersectMethod im) : SDFNode(l, im), m_center(c), m_radius(r)
+    {
+    }
+
+    Ref<SDFSphere> SDFSphere::create(const Point &c, float r, float l, IntersectMethod im)
+    {
+        return create_ref<SDFSphere>(c, r, l, im);
+    }
+
+    float SDFSphere::value(const Point &p) const
     {
         Vector cp(m_center, p);
         return length(cp) - m_radius;
     }
 
-    ImplicitType ImplicitSphere::type() const
+    SDFType SDFSphere::type() const
     {
-        return ImplicitType::PRIMITIVE_SPHERE;
+        return SDFType::PRIMITIVE_SPHERE;
     }
 
-    /************************** Implicit Box ******************************/
+    float& SDFSphere::radius()
+    {
+        return m_radius;
+    }
 
-    ImplicitBox::ImplicitBox(const Point &a, const Point &b, float lambda, IntersectMethod im) : ImplicitNode(lambda, im), m_pmin(a), m_pmax(b)
+    /************************** SDF Box ******************************/
+
+    SDFBox::SDFBox(const Point &a, const Point &b, float lambda, IntersectMethod im) : SDFNode(lambda, im), m_pmin(a), m_pmax(b)
     {
     }
 
-    Ref<ImplicitBox> ImplicitBox::create(const Point &a, const Point &b, float l, IntersectMethod im)
+    Ref<SDFBox> SDFBox::create(const Point &a, const Point &b, float l, IntersectMethod im)
     {
-        return create_ref<ImplicitBox>(a, b, l, im);
+        return create_ref<SDFBox>(a, b, l, im);
     }
 
-    float ImplicitBox::value(const Point &p) const
+    float SDFBox::value(const Point &p) const
     {
         Vector q = Vector(abs(p) - ((m_pmax - m_pmin) * 0.5));
         return std::min(std::max(q(0), std::max(q(1), q(2))), 0.f) + length(max(q, Vector(0)));
     }
 
-    ImplicitType ImplicitBox::type() const
+    SDFType SDFBox::type() const
     {
-        return ImplicitType::PRIMITIVE_BOX;
+        return SDFType::PRIMITIVE_BOX;
     }
 
-    /************************** Implicit Plane ******************************/
+    float& SDFBox::pmin()
+    {
+        return m_pmin.x; 
+    }
 
-    ImplicitPlane::ImplicitPlane(const Vector &normal, float h, float lambda, IntersectMethod im) : ImplicitNode(lambda, im), m_normal(normal), m_h(h)
+    float& SDFBox::pmax()
+    {
+        return m_pmax.x; 
+    }
+
+    /************************** SDF Plane ******************************/
+
+    SDFPlane::SDFPlane(const Vector &normal, float h, float lambda, IntersectMethod im) : SDFNode(lambda, im), m_normal(normal), m_h(h)
     {
     }
 
-    Ref<ImplicitPlane> ImplicitPlane::create(const Vector &normal, float h, float l, IntersectMethod im)
+    Ref<SDFPlane> SDFPlane::create(const Vector &normal, float h, float l, IntersectMethod im)
     {
-        return std::make_shared<ImplicitPlane>(normal, h, l, im);
+        return std::make_shared<SDFPlane>(normal, h, l, im);
     }
 
-    float ImplicitPlane::value(const Point &p) const
+    float SDFPlane::value(const Point &p) const
     {
         return dot(Vector(p), m_normal) + m_h;
     }
 
-    ImplicitType ImplicitPlane::type() const
+    SDFType SDFPlane::type() const
     {
-        return ImplicitType::PRIMITIVE_PLANE;
+        return SDFType::PRIMITIVE_PLANE;
     }
 
-    /************************** Implicit Torus ******************************/
-
-    ImplicitTorus::ImplicitTorus(float r1, float r2, float lambda, IntersectMethod im) : ImplicitNode(lambda, im), m_r1(r1), m_r2(r2)
+    float& SDFPlane::h()
     {
+        return m_h;
     }
 
-    Ref<ImplicitTorus> ImplicitTorus::create(float r1, float r2, float l, IntersectMethod im)
+    float& SDFPlane::normal()
     {
-        return std::make_shared<ImplicitTorus>(r1, r2, l, im);
+        return m_normal.x; 
     }
 
-    float ImplicitTorus::value(const Point &p) const
-    {
-        vec2 q = vec2(length({p.x, p.z}) - m_r1, p.y);
-        return length(q) - m_r2;
-    }
+    /************************** SDF Torus ******************************/
 
-    ImplicitType ImplicitTorus::type() const
-    {
-        return ImplicitType::PRIMITIVE_TORUS;
-    }
-
-    /************************** Implicit Tree ******************************/
-
-    ImplicitTree::ImplicitTree(const Ref<ImplicitNode> &root, float l, IntersectMethod im) : ImplicitNode(l, im), m_root(root)
+    SDFTorus::SDFTorus(float r1, float r2, float lambda, IntersectMethod im) : SDFNode(lambda, im), m_R(r1), m_r(r2)
     {
     }
 
-    Ref<ImplicitTree> ImplicitTree::create(const Ref<ImplicitNode> &root, float l, IntersectMethod im)
+    Ref<SDFTorus> SDFTorus::create(float r1, float r2, float l, IntersectMethod im)
     {
-        return create_ref<ImplicitTree>(root, l, im);
+        return std::make_shared<SDFTorus>(r1, r2, l, im);
     }
 
-    float ImplicitTree::value(const Point &p) const
+    float SDFTorus::value(const Point &p) const
+    {
+        vec2 q = vec2(length({p.x, p.z}) - m_R, p.y);
+        return length(q) - m_r;
+    }
+
+    SDFType SDFTorus::type() const
+    {
+        return SDFType::PRIMITIVE_TORUS;
+    }
+
+    float& SDFTorus::r()
+    {
+        return m_r;
+    }
+
+    float& SDFTorus::R()
+    {
+        return m_R; 
+    }
+
+    /************************** SDF Tree ******************************/
+
+    SDFTree::SDFTree(const Ref<SDFNode> &root, float l, IntersectMethod im) : SDFNode(l, im), m_root(root)
+    {
+    }
+
+    Ref<SDFTree> SDFTree::create(const Ref<SDFNode> &root, float l, IntersectMethod im)
+    {
+        return create_ref<SDFTree>(root, l, im);
+    }
+
+    float SDFTree::value(const Point &p) const
     {
         return m_root->value(p);
+    }
+
+    Ref<SDFNode> SDFTree::left() 
+    {
+        return m_root->left();
+    }
+
+    Ref<SDFNode> SDFTree::right() 
+    {
+        return m_root->right();
     }
 
     /*!
@@ -292,7 +463,7 @@ namespace gm
         \param g Returned geometry.
         \param s_epsilon Epsilon value for computing vertices on straddling edges.
         */
-    Ref<Mesh> ImplicitTree::polygonize(int n, const Box &box) const
+    Ref<Mesh> SDFTree::polygonize(int n, const Box &box) const
     {
         Ref<Mesh> mesh = create_ref<Mesh>(GL_TRIANGLES);
 
@@ -518,7 +689,7 @@ namespace gm
     \param s_epsilon Precision.
     \return Point on the implicit surface.
     */
-    Vector ImplicitTree::dichotomy(Vector a, Vector b, float va, float vb, float length) const
+    Vector SDFTree::dichotomy(Vector a, Vector b, float va, float vb, float length) const
     {
         int ia = va > 0.0 ? 1 : -1;
 
@@ -544,26 +715,56 @@ namespace gm
         return c;
     }
 
-    ImplicitType ImplicitTree::type() const
+    void SDFTree::root(const Ref<SDFNode> &node)
     {
-        return ImplicitType::TREE;
+        m_root = node; 
+    }
+
+    Ref<SDFNode>& SDFTree::root()
+    {
+        return m_root;
+    }
+
+    SDFType SDFTree::type() const
+    {
+        return SDFType::TREE;
+    }
+
+    std::vector<SDFType> SDFTree::tree_type() const
+    {
+        return tree_type(m_root);
+    }
+
+    std::vector<SDFType> SDFTree::tree_type(const Ref<SDFNode>& node) const
+    {
+        if(!node) return {}; 
+
+        std::vector<SDFType> types; 
+        auto left = tree_type(node->left());
+        auto right = tree_type(node->right());
+        types.reserve(left.size() + right.size() + 1);
+
+        types.emplace_back(node->type());
+        types.insert(types.end(), left.begin(), left.end());
+        types.insert(types.end(), right.begin(), right.end());
+        return types;
     }
 
     /*!
     \brief Compute the normal to the surface.
 
-    \sa ImplicitTree::gradient(const Vector&) const
+    \sa SDFTree::gradient(const Vector&) const
 
     \param p Point (should be on the surface).
     */
-    Vector ImplicitTree::normal(const Vector &p) const
+    Vector SDFTree::normal(const Vector &p) const
     {
         Vector normal = normalize(gradient(Point(p)));
 
         return normal;
     }
 
-    int ImplicitTree::m_edge_table[256] = {
+    int SDFTree::m_edge_table[256] = {
         0, 273, 545, 816, 1042, 1283, 1587, 1826, 2082, 2355, 2563, 2834, 3120, 3361, 3601, 3840,
         324, 85, 869, 628, 1366, 1095, 1911, 1638, 2406, 2167, 2887, 2646, 3444, 3173, 3925, 3652,
         644, 917, 165, 436, 1686, 1927, 1207, 1446, 2726, 2999, 2183, 2454, 3764, 4005, 3221, 3460,
@@ -581,7 +782,7 @@ namespace gm
         3652, 3925, 3173, 3444, 2646, 2887, 2167, 2406, 1638, 1911, 1095, 1366, 628, 869, 85, 324,
         3840, 3601, 3361, 3120, 2834, 2563, 2355, 2082, 1826, 1587, 1283, 1042, 816, 545, 273, 0};
 
-    int ImplicitTree::m_triangle_table[256][16] = {
+    int SDFTree::m_triangle_table[256][16] = {
         {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
         {0, 8, 4, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
         {0, 5, 9, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
@@ -838,5 +1039,30 @@ namespace gm
         {0, 9, 5, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
         {0, 4, 8, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
         {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}};
+
+    const char* type_str(SDFType type)
+    {
+        switch(type)
+        {
+            case SDFType::PRIMITIVE_SPHERE : return "SPHERE";
+            case SDFType::PRIMITIVE_BOX : return "BOX";
+            case SDFType::PRIMITIVE_TORUS : return "TORUS";
+            case SDFType::PRIMITIVE_PLANE : return "PLANE";
+            case SDFType::PRIMITIVE_CAPSULE : return "CAPSULE";
+            case SDFType::PRIMITIVE_CONE : return "CONE";
+            case SDFType::PRIMITIVE_CYLINDER : return "CYLINDER";
+            case SDFType::PRIMITIVE_ROUND_BOX : return "ROUND BOX";
+            case SDFType::BINARY_OPERATOR_UNION : return "UNION";
+            case SDFType::BINARY_OPERATOR_SMOOTH_UNION : return "SMOOTH UNION";
+            case SDFType::BINARY_OPERATOR_INTERSECTION : return "INTERSECTION";
+            case SDFType::BINARY_OPERATOR_SMOOTH_INTERSECTION : return "SMOOTH INTERSECTION";
+            case SDFType::BINARY_OPERATOR_SUBSTRACTION : return "SUBSTRACTION";
+            case SDFType::BINARY_OPERATOR_SMOOTH_SUBSTRACTION : return "SMOOTH SUBSTRACTION";
+            case SDFType::UNARY_OPERATOR_HULL : return "HULL";
+            case SDFType::TREE : return "TREE";
+        }
+
+        return "NULL";
+    }
 
 } // namespace gm

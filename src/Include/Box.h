@@ -5,7 +5,7 @@
 #include "pch.h"
 
 #include "vecext.h"
-#include "utils.h"
+#include "Utils.h"
 
 namespace gm
 {
