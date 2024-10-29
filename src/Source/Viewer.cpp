@@ -1026,7 +1026,8 @@ void Viewer::render_node_ui(Ref<gm::SDFNode> &node)
     {
         if (auto sphere = dynamic_cast<gm::SDFSphere *>(node.get()))
         {
-            ImGui::InputFloat("Radius", &sphere->radius());
+            ImGui::InputFloat3("cadius", &sphere->center());
+            ImGui::InputFloat("radius", &sphere->radius());
         }
         else if (auto box = dynamic_cast<gm::SDFBox *>(node.get()))
         {

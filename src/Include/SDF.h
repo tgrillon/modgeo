@@ -32,22 +32,31 @@ namespace gm
 
     enum class SDFType
     {
-        PRIMITIVE_SPHERE = 0,
+        TREE = 0,
+        PRIMITIVE_SPHERE,
         PRIMITIVE_BOX,
-        PRIMITIVE_ROUND_BOX,
         PRIMITIVE_TORUS,
         PRIMITIVE_CYLINDER,
         PRIMITIVE_CONE,
         PRIMITIVE_PLANE,
         PRIMITIVE_CAPSULE,
+        PRIMITIVE_ELLIPSOID,
+        PRIMITIVE_OCTAHEDRON,
+        PRIMITIVE_PYRAMID,
         UNARY_OPERATOR_HULL,
+        UNARY_OPERATOR_ROUNDING,
+        UNARY_OPERATOR_ELONGATION,
+        UNARY_OPERATOR_REPETITION,
         BINARY_OPERATOR_UNION,
         BINARY_OPERATOR_SMOOTH_UNION,
         BINARY_OPERATOR_INTERSECTION,
+        BINARY_OPERATOR_XOR,
         BINARY_OPERATOR_SMOOTH_INTERSECTION,
         BINARY_OPERATOR_SUBSTRACTION,
         BINARY_OPERATOR_SMOOTH_SUBSTRACTION,
-        TREE,
+        TRANSFORM_TRANSLATION,
+        TRANSFORM_ROTATION,
+        TRANSFORM_SCALE,
         NB_ELT
     };
 
@@ -191,6 +200,20 @@ namespace gm
         SDFType type() const override;
     };
 
+    class SDFXOR final : public SDFBinaryOperator
+    {
+    public:
+        SDFXOR(const Ref<SDFNode> &l, const Ref<SDFNode> &r);
+        ~SDFXOR() = default;
+
+        static Ref<SDFXOR> create(const Ref<SDFNode> &l, const Ref<SDFNode> &r);
+
+        float value(const Point &p) const override;
+
+        SDFType type() const override;
+    };
+
+
     class SDFSmoothUnion : public SDFSmoothBinaryOperator
     {
     public:
@@ -243,6 +266,7 @@ namespace gm
         SDFType type() const override;
 
         float& radius();
+        float& center();
 
     private:
         Point m_center;

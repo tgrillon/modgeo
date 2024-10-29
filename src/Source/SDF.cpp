@@ -54,19 +54,19 @@ namespace gm
         m_intersect_method = method;
     }
 
-    Ref<SDFNode> SDFNode::left() 
+    Ref<SDFNode> SDFNode::left()
     {
         return nullptr;
     }
 
-    Ref<SDFNode> SDFNode::right() 
+    Ref<SDFNode> SDFNode::right()
     {
         return nullptr;
     }
 
-    std::pair<Ref<SDFNode>, Ref<SDFNode>> SDFNode::children() 
+    std::pair<Ref<SDFNode>, Ref<SDFNode>> SDFNode::children()
     {
-        return { left(), right() };
+        return {left(), right()};
     }
 
     bool SDFNode::intersect_ray_marching(const Ray &ray, float eps) const
@@ -106,19 +106,19 @@ namespace gm
     {
     }
 
-    Ref<SDFNode> SDFUnaryOperator::left() 
+    Ref<SDFNode> SDFUnaryOperator::left()
     {
         return m_node;
     }
 
-    Ref<SDFNode> SDFUnaryOperator::right() 
+    Ref<SDFNode> SDFUnaryOperator::right()
     {
         return nullptr;
     }
 
     /********************** SDF Hull ************************/
 
-    SDFHull::SDFHull(const Ref<SDFNode>& n, float thickness) : SDFUnaryOperator(n), m_thickness(thickness)
+    SDFHull::SDFHull(const Ref<SDFNode> &n, float thickness) : SDFUnaryOperator(n), m_thickness(thickness)
     {
     }
 
@@ -137,9 +137,9 @@ namespace gm
         return SDFType::UNARY_OPERATOR_HULL;
     }
 
-    float& SDFHull::thickness()
+    float &SDFHull::thickness()
     {
-        return m_thickness; 
+        return m_thickness;
     }
 
     /********************** SDF Binary Operator ************************/
@@ -148,12 +148,12 @@ namespace gm
     {
     }
 
-    Ref<SDFNode> SDFBinaryOperator::left() 
+    Ref<SDFNode> SDFBinaryOperator::left()
     {
         return m_left;
     }
 
-    Ref<SDFNode> SDFBinaryOperator::right() 
+    Ref<SDFNode> SDFBinaryOperator::right()
     {
         return m_right;
     }
@@ -164,7 +164,7 @@ namespace gm
     {
     }
 
-    float& SDFSmoothBinaryOperator::k()
+    float &SDFSmoothBinaryOperator::k()
     {
         return m_k;
     }
@@ -224,12 +224,35 @@ namespace gm
 
     float SDFSubstraction::value(const Point &p) const
     {
-        return std::max(-m_left->value(p), m_right->value(p));
+        return std::max(m_left->value(p), -m_right->value(p));
     }
 
     SDFType SDFSubstraction::type() const
     {
         return SDFType::BINARY_OPERATOR_SUBSTRACTION;
+    }
+
+    /************************** SDF XOR ****************************/
+
+    SDFXOR::SDFXOR(const Ref<SDFNode> &l, const Ref<SDFNode> &r) : SDFBinaryOperator(l, r)
+    {
+    }
+
+    Ref<SDFXOR> SDFXOR::create(const Ref<SDFNode> &l, const Ref<SDFNode> &r)
+    {
+        return std::make_shared<SDFXOR>(l, r);
+    }
+
+    float SDFXOR::value(const Point &p) const
+    {
+        float fA = m_left->value(p);
+        float fB = m_right->value(p);
+        return std::max(std::min(fA, fB), -std::max(fA, fB));
+    }
+
+    SDFType SDFXOR::type() const
+    {
+        return SDFType::BINARY_OPERATOR_XOR;
     }
 
     /************************** SDF Smooth Union ****************************/
@@ -247,7 +270,7 @@ namespace gm
     {
         float fA = m_left->value(p);
         float fB = m_right->value(p);
-        float h = std::max(m_k - abs(fA-fB), 0.f);
+        float h = std::max(m_k - abs(fA - fB), 0.f);
 
         return std::min(fA, fB) - h * h * 0.25 / m_k;
     }
@@ -297,9 +320,9 @@ namespace gm
     {
         float fA = m_left->value(p);
         float fB = m_right->value(p);
-        float h = std::max(m_k - abs(-fA - fB), 0.f);
+        float h = std::max(m_k - abs(fA + fB), 0.f);
 
-        return std::max(-fA, fB) + h * h * 0.25 / m_k;
+        return std::max(fA, -fB) + h * h * 0.25 / m_k;
     }
 
     SDFType SDFSmoothSubstraction::type() const
@@ -329,9 +352,14 @@ namespace gm
         return SDFType::PRIMITIVE_SPHERE;
     }
 
-    float& SDFSphere::radius()
+    float &SDFSphere::radius()
     {
         return m_radius;
+    }
+
+    float &SDFSphere::center()
+    {
+        return m_center.x;
     }
 
     /************************** SDF Box ******************************/
@@ -356,14 +384,14 @@ namespace gm
         return SDFType::PRIMITIVE_BOX;
     }
 
-    float& SDFBox::pmin()
+    float &SDFBox::pmin()
     {
-        return m_pmin.x; 
+        return m_pmin.x;
     }
 
-    float& SDFBox::pmax()
+    float &SDFBox::pmax()
     {
-        return m_pmax.x; 
+        return m_pmax.x;
     }
 
     /************************** SDF Plane ******************************/
@@ -387,14 +415,14 @@ namespace gm
         return SDFType::PRIMITIVE_PLANE;
     }
 
-    float& SDFPlane::h()
+    float &SDFPlane::h()
     {
         return m_h;
     }
 
-    float& SDFPlane::normal()
+    float &SDFPlane::normal()
     {
-        return m_normal.x; 
+        return m_normal.x;
     }
 
     /************************** SDF Torus ******************************/
@@ -419,14 +447,14 @@ namespace gm
         return SDFType::PRIMITIVE_TORUS;
     }
 
-    float& SDFTorus::r()
+    float &SDFTorus::r()
     {
         return m_r;
     }
 
-    float& SDFTorus::R()
+    float &SDFTorus::R()
     {
-        return m_R; 
+        return m_R;
     }
 
     /************************** SDF Tree ******************************/
@@ -445,12 +473,12 @@ namespace gm
         return m_root->value(p);
     }
 
-    Ref<SDFNode> SDFTree::left() 
+    Ref<SDFNode> SDFTree::left()
     {
         return m_root->left();
     }
 
-    Ref<SDFNode> SDFTree::right() 
+    Ref<SDFNode> SDFTree::right()
     {
         return m_root->right();
     }
@@ -717,10 +745,10 @@ namespace gm
 
     void SDFTree::root(const Ref<SDFNode> &node)
     {
-        m_root = node; 
+        m_root = node;
     }
 
-    Ref<SDFNode>& SDFTree::root()
+    Ref<SDFNode> &SDFTree::root()
     {
         return m_root;
     }
@@ -735,11 +763,12 @@ namespace gm
         return tree_type(m_root);
     }
 
-    std::vector<SDFType> SDFTree::tree_type(const Ref<SDFNode>& node) const
+    std::vector<SDFType> SDFTree::tree_type(const Ref<SDFNode> &node) const
     {
-        if(!node) return {}; 
+        if (!node)
+            return {};
 
-        std::vector<SDFType> types; 
+        std::vector<SDFType> types;
         auto left = tree_type(node->left());
         auto right = tree_type(node->right());
         types.reserve(left.size() + right.size() + 1);
@@ -1040,26 +1069,60 @@ namespace gm
         {0, 4, 8, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
         {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}};
 
-    const char* type_str(SDFType type)
+    const char *type_str(SDFType type)
     {
-        switch(type)
+        switch (type)
         {
-            case SDFType::PRIMITIVE_SPHERE : return "SPHERE";
-            case SDFType::PRIMITIVE_BOX : return "BOX";
-            case SDFType::PRIMITIVE_TORUS : return "TORUS";
-            case SDFType::PRIMITIVE_PLANE : return "PLANE";
-            case SDFType::PRIMITIVE_CAPSULE : return "CAPSULE";
-            case SDFType::PRIMITIVE_CONE : return "CONE";
-            case SDFType::PRIMITIVE_CYLINDER : return "CYLINDER";
-            case SDFType::PRIMITIVE_ROUND_BOX : return "ROUND BOX";
-            case SDFType::BINARY_OPERATOR_UNION : return "UNION";
-            case SDFType::BINARY_OPERATOR_SMOOTH_UNION : return "SMOOTH UNION";
-            case SDFType::BINARY_OPERATOR_INTERSECTION : return "INTERSECTION";
-            case SDFType::BINARY_OPERATOR_SMOOTH_INTERSECTION : return "SMOOTH INTERSECTION";
-            case SDFType::BINARY_OPERATOR_SUBSTRACTION : return "SUBSTRACTION";
-            case SDFType::BINARY_OPERATOR_SMOOTH_SUBSTRACTION : return "SMOOTH SUBSTRACTION";
-            case SDFType::UNARY_OPERATOR_HULL : return "HULL";
-            case SDFType::TREE : return "TREE";
+        case SDFType::TREE:
+            return "TREE";
+        case SDFType::PRIMITIVE_SPHERE:
+            return "PRIMITIVE_SPHERE";
+        case SDFType::PRIMITIVE_BOX:
+            return "PRIMITIVE_BOX";
+        case SDFType::PRIMITIVE_TORUS:
+            return "PRIMITIVE_TORUS";
+        case SDFType::PRIMITIVE_CYLINDER:
+            return "PRIMITIVE_CYLINDER";
+        case SDFType::PRIMITIVE_CONE:
+            return "PRIMITIVE_CONE";
+        case SDFType::PRIMITIVE_PLANE:
+            return "PRIMITIVE_PLANE";
+        case SDFType::PRIMITIVE_CAPSULE:
+            return "PRIMITIVE_CAPSULE";
+        case SDFType::PRIMITIVE_ELLIPSOID:
+            return "PRIMITIVE_ELLIPSOID";
+        case SDFType::PRIMITIVE_OCTAHEDRON:
+            return "PRIMITIVE_OCTAHEDRON";
+        case SDFType::PRIMITIVE_PYRAMID:
+            return "PRIMITIVE_PYRAMID";
+        case SDFType::UNARY_OPERATOR_HULL:
+            return "UNARY_OPERATOR_HULL";
+        case SDFType::UNARY_OPERATOR_ROUNDING:
+            return "UNARY_OPERATOR_ROUNDING";
+        case SDFType::UNARY_OPERATOR_ELONGATION:
+            return "UNARY_OPERATOR_ELONGATION";
+        case SDFType::UNARY_OPERATOR_REPETITION:
+            return "UNARY_OPERATOR_REPETITION";
+        case SDFType::BINARY_OPERATOR_UNION:
+            return "BINARY_OPERATOR_UNION";
+        case SDFType::BINARY_OPERATOR_SMOOTH_UNION:
+            return "BINARY_OPERATOR_SMOOTH_UNION";
+        case SDFType::BINARY_OPERATOR_INTERSECTION:
+            return "BINARY_OPERATOR_INTERSECTION";
+        case SDFType::BINARY_OPERATOR_XOR:
+            return "BINARY_OPERATOR_XOR";
+        case SDFType::BINARY_OPERATOR_SMOOTH_INTERSECTION:
+            return "BINARY_OPERATOR_SMOOTH_INTERSECTION";
+        case SDFType::BINARY_OPERATOR_SUBSTRACTION:
+            return "BINARY_OPERATOR_SUBSTRACTION";
+        case SDFType::BINARY_OPERATOR_SMOOTH_SUBSTRACTION:
+            return "BINARY_OPERATOR_SMOOTH_SUBSTRACTION";
+        case SDFType::TRANSFORM_TRANSLATION:
+            return "TRANSFORM_TRANSLATION";
+        case SDFType::TRANSFORM_ROTATION:
+            return "TRANSFORM_ROTATION";
+        case SDFType::TRANSFORM_SCALE:
+            return "TRANSFORM_SCALE";
         }
 
         return "NULL";
