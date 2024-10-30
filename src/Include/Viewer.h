@@ -50,7 +50,7 @@ private:
     void set_sdf_operator();
     void build_sdf_tree();
     void render_node_ui(Ref<gm::SDFNode>& node);
-    void render_sdf_node_ui();
+    void render_sdf_buttons();
 
 private:
     Ref<Mesh> m_grid;    //! bezier grid

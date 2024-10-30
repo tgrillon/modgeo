@@ -497,7 +497,7 @@ int Viewer::render_ui()
         return -1;
     }
 
-    ImGui::Begin("Scene");
+    ImGui::Begin("Viewport");
 
     if (ImGui::IsWindowHovered())
     {
@@ -531,7 +531,7 @@ int Viewer::render_ui()
 
     if (m_show_ui)
     {
-        ImGui::Begin("Parameters");
+        ImGui::Begin("Control Panel");
 
         render_demo_buttons();
         if (ImGui::CollapsingHeader("Global"))
@@ -596,7 +596,7 @@ int Viewer::render_ui()
             ImGui::Text("fps : %.2f ", (1000.f / delta_time()));
             ImGui::Text("cpu : %i ms %i us ", cpums, cpuus);
             ImGui::Text("gpu : %i ms %i us", gpums, gpuus);
-            ImGui::Text("total : %.2f ms", delta_time());
+            ImGui::Text("frame rate : %.2f ms", delta_time());
         }
         if (ImGui::CollapsingHeader("Geometry"))
         {
@@ -855,12 +855,6 @@ int Viewer::render_params_sdf()
     ImGui::SeparatorText("SDF TREE");
     build_sdf_tree();
 
-    if (ImGui::SliderInt("Resolution", &m_sdf_resolution, 3, 1000))
-    {
-        m_slide_x = 0;
-        m_slide_y = 0;
-        m_slide_z = 0;
-    }
     if (ImGui::CollapsingHeader("SDF Space"))
     {
         if (ImGui::SliderInt("Box slide x", &m_slide_x, 0, m_sdf_resolution))
@@ -886,7 +880,14 @@ int Viewer::render_params_sdf()
     ImGui::SameLine();
     ImGui::Checkbox("implicit space", &m_show_sdf_box);
 
-    render_sdf_node_ui();
+    if (ImGui::SliderInt("Resolution", &m_sdf_resolution, 3, 1000))
+    {
+        m_slide_x = 0;
+        m_slide_y = 0;
+        m_slide_z = 0;
+    }
+
+    render_sdf_buttons();
 
     return 0;
 }
@@ -1256,7 +1257,7 @@ void Viewer::render_node_ui(Ref<gm::SDFNode> &node)
     }
 }
 
-void Viewer::render_sdf_node_ui()
+void Viewer::render_sdf_buttons()
 {
     if (ImGui::Button("Render Tree"))
     {
