@@ -22,6 +22,7 @@
       <a href="#application">Application</a>
       <ul>
         <li><a href="#global-features">Fonctionnalités globale</a></li>
+      </ul>
         <li><a href="#spline-demo">Démo courbe de Bézier</a></li>
         <li><a href="#patch-demo">Démo patche de Bézier</a></li>
         <li><a href="#sdf-demo">Démo surface implicite (SDF)</a></li>
@@ -30,15 +31,17 @@
   </ol>
 </details>
 
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-
-<!-- ABOUT THE PROJECT -->
 <a id="about-the-project"></a>
+
 ## À propos
 
 Ce projet a été réalisé dans le cadre de l'unité d'enseignement "Modélisation Géométrique" en Master 2 ID3D à l'Université Claude Bernard Lyon 1, Villeurbanne.    
 
-<a id="objectifs"></a>
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+<a id="goals"></a>
 
 ### Objectifs
 
@@ -49,6 +52,12 @@ de contrôle.
 ##### Surfaces de révolution et d’extrusion
 
 - Générer des surfaces d’extrusion à partir d’une courbe génératrice.
+
+##### Modélisation à l’aide de surfaces implicites
+
+- L’objectif est de modéliser des SDF à l’aide d’un arbre de construction hiérarchique
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <a id="structure"></a>
 
@@ -75,6 +84,8 @@ de contrôle.
   └── README.md             # Fichier README du projet.
 ```
 
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
 <a id="libraries"></a>
 
 ### Librairies utilisées
@@ -95,12 +106,18 @@ Ces librairies sont accessibles dans le répertoire *vendor*.
 
 Ce projet ne compile que sous Linux. 
 
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+<a id="prerequisites"></a>
+
 ### Prérequis
 
 GKit utilise SDL2 et Glew :  
 ```sh
 sudo apt install libsdl2-dev libsdl2-image-dev libglew-dev
 ```
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <a id="installation"></a>
 
@@ -110,6 +127,8 @@ sudo apt install libsdl2-dev libsdl2-image-dev libglew-dev
 ```sh
 git clone https://github.com/tgrillon/modgeo.git
 ```
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <a id="build"></a>
 
@@ -140,7 +159,9 @@ L'application utilise ImGui qui permet d'avoir une interface modulable avec des 
 
 ![fenêtre de l'application](./data/readme/windows.png)
 
-<a id="#global-features"></a>
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+<a id="global-features"></a>
 
 ### Fonctionnalités globales
 
@@ -167,7 +188,9 @@ L'application utilise ImGui qui permet d'avoir une interface modulable avec des 
   - `1` : Nom du fichier. 
   - `2` : Sauvegarder le maillage au format OBJ. Le fichier est sauvegardé dans le répertoire `data/obj`.
 
-<a id="#spline-demo"></a>
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+<a id="spline-demo"></a>
 
 ### Démo courbe de Bézier
 
@@ -187,8 +210,9 @@ Cette démo permet de jouer avec des courbe de Bézier.
   - `7` : Fonctrion radiale pour la surface de révolution.
   - `8` : Générer le maillage.
 
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-<a id="#patch-demo"></a>
+<a id="patch-demo"></a>
 
 ### Démo patche de Bézier
 
@@ -199,7 +223,9 @@ Cette démo permet de jouer avec des patches de Bézier.
 - `g` : *Paramètres*
   - `1` : Afficher/Masquer la grille suivie par le patche.
 
-<a id="#sdf-demo"></a>
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+<a id="sdf-demo"></a>
 
 ### Démo surface implicite (SDF)
 
@@ -220,6 +246,8 @@ Cette démo permet de jouer avec des surfaces implicites (SDF).
   - `3` : Paramètres de la boîte utilisée pour l'algorithme d'approximation du maillage de la surface implicite.
   - `4` : Afficher la boîte.
   - `5` : Générer/Supprimer le maillage correspondant à la surface implicite décrit par l'arbre.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ### Exemple
 
