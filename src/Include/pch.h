@@ -6,6 +6,7 @@
 #include <sstream>
 #include <cmath>
 #include <ranges>
+#include <random>
 #include <cassert>
 #include <chrono>
 #include <cstdio>
@@ -28,6 +29,7 @@
 #include "texture.h"
 #include "glcore.h"
 #include "orbiter.h"
+#include "wavefront.h"
 #include "mesh.h"
 #include "vec.h"
 #include "draw.h"

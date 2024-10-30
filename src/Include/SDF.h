@@ -56,9 +56,14 @@ namespace gm
         BINARY_OPERATOR_SMOOTH_SUBSTRACTION,
         TRANSFORM_TRANSLATION,
         TRANSFORM_ROTATION,
+        TRANSFORM_ROTATION_X,
+        TRANSFORM_ROTATION_Y,
+        TRANSFORM_ROTATION_Z,
         TRANSFORM_SCALE,
         NB_ELT
     };
+
+    /************************** SDF Node ******************************/
 
     class SDFNode
     {
@@ -78,6 +83,9 @@ namespace gm
 
         std::pair<Ref<SDFNode>, Ref<SDFNode>> children();
 
+        int value_call_count() const;
+        void reset_value_call_count();
+
         virtual SDFType type() const = 0;
 
     private:
@@ -87,57 +95,65 @@ namespace gm
     protected:
         static const float s_epsilon; //!< Epsilon value for partial derivatives
         static const int s_limit;     //!< Epsilon value for intersection limit
+        static int s_value_call_count;
+
     protected:
         float m_lambda{1.0};
 
         IntersectMethod m_intersect_method;
     };
 
+    /************************** SDF Unary Operator ******************************/
+
     class SDFUnaryOperator : public SDFNode
     {
     public:
-        SDFUnaryOperator(const Ref<SDFNode> &n);
-        ~SDFUnaryOperator() = default;
+        SDFUnaryOperator(const Ref<SDFNode> &n, float lambda = 1.0, IntersectMethod im = IntersectMethod::RAY_MARCHING);
+        virtual ~SDFUnaryOperator() = default;
 
         virtual float value(const Point &p) const = 0;
 
-        Ref<SDFNode> left() override; 
-        Ref<SDFNode> right() override; 
+        Ref<SDFNode> left() override;
+        Ref<SDFNode> right() override;
 
         virtual SDFType type() const = 0;
-    
+
     protected:
         Ref<SDFNode> m_node;
     };
 
+    /************************** SDF Hull ******************************/
+
     class SDFHull final : public SDFUnaryOperator
     {
     public:
-        SDFHull(const Ref<SDFNode> &n, float thickness);
+        SDFHull(const Ref<SDFNode> &n, float thickness, float lambda = 1.0, IntersectMethod im = IntersectMethod::RAY_MARCHING);
         ~SDFHull() = default;
 
-        static Ref<SDFHull> create(const Ref<SDFNode> &n, float thickness);
+        static Ref<SDFHull> create(const Ref<SDFNode> &n, float thickness, float lambda = 1.0, IntersectMethod im = IntersectMethod::RAY_MARCHING);
 
         float value(const Point &p) const override;
 
         SDFType type() const override;
 
-        float& thickness(); 
+        float &thickness();
 
     private:
         float m_thickness;
     };
 
+    /************************** SDF Binary Operator ******************************/
+
     class SDFBinaryOperator : public SDFNode
     {
     public:
-        SDFBinaryOperator(const Ref<SDFNode> &l, const Ref<SDFNode> &r);
-        ~SDFBinaryOperator() = default;
+        SDFBinaryOperator(const Ref<SDFNode> &l, const Ref<SDFNode> &r, float lambda = 1.0, IntersectMethod im = IntersectMethod::RAY_MARCHING);
+        virtual ~SDFBinaryOperator() = default;
 
         virtual float value(const Point &p) const = 0;
 
-        Ref<SDFNode> left() override; 
-        Ref<SDFNode> right() override; 
+        Ref<SDFNode> left() override;
+        Ref<SDFNode> right() override;
 
         virtual SDFType type() const = 0;
 
@@ -145,113 +161,130 @@ namespace gm
         Ref<SDFNode> m_left, m_right;
     };
 
+    /************************** SDF Smooth Binary Operator ******************************/
+
     class SDFSmoothBinaryOperator : public SDFBinaryOperator
     {
     public:
-        SDFSmoothBinaryOperator(const Ref<SDFNode> &l, const Ref<SDFNode> &r, float k);
-        ~SDFSmoothBinaryOperator() = default;
+        SDFSmoothBinaryOperator(const Ref<SDFNode> &l, const Ref<SDFNode> &r, float k, float lambda = 1.0, IntersectMethod im = IntersectMethod::RAY_MARCHING);
+        virtual ~SDFSmoothBinaryOperator() = default;
 
         virtual float value(const Point &p) const = 0;
 
         virtual SDFType type() const = 0;
 
-        float& k();
+        float &k();
 
     protected:
         float m_k;
     };
 
+    /************************** SDF Union ******************************/
+
     class SDFUnion final : public SDFBinaryOperator
     {
     public:
-        SDFUnion(const Ref<SDFNode> &l, const Ref<SDFNode> &r);
+        SDFUnion(const Ref<SDFNode> &l, const Ref<SDFNode> &r, float lambda = 1.0, IntersectMethod im = IntersectMethod::RAY_MARCHING);
         ~SDFUnion() = default;
 
-        static Ref<SDFUnion> create(const Ref<SDFNode> &l, const Ref<SDFNode> &r);
+        static Ref<SDFUnion> create(const Ref<SDFNode> &l, const Ref<SDFNode> &r, float lambda = 1.0, IntersectMethod im = IntersectMethod::RAY_MARCHING);
 
         float value(const Point &p) const override;
 
         SDFType type() const override;
     };
+
+    /************************** SDF Intersection ******************************/
 
     class SDFIntersection final : public SDFBinaryOperator
     {
     public:
-        SDFIntersection(const Ref<SDFNode> &l, const Ref<SDFNode> &r);
+        SDFIntersection(const Ref<SDFNode> &l, const Ref<SDFNode> &r, float lambda = 1.0, IntersectMethod im = IntersectMethod::RAY_MARCHING);
         ~SDFIntersection() = default;
 
-        static Ref<SDFIntersection> create(const Ref<SDFNode> &l, const Ref<SDFNode> &r);
+        static Ref<SDFIntersection> create(const Ref<SDFNode> &l, const Ref<SDFNode> &r, float lambda = 1.0, IntersectMethod im = IntersectMethod::RAY_MARCHING);
 
         float value(const Point &p) const override;
 
         SDFType type() const override;
     };
+
+    /************************** SDF Substraction ******************************/
 
     class SDFSubstraction final : public SDFBinaryOperator
     {
     public:
-        SDFSubstraction(const Ref<SDFNode> &l, const Ref<SDFNode> &r);
+        SDFSubstraction(const Ref<SDFNode> &l, const Ref<SDFNode> &r, float lambda = 1.0, IntersectMethod im = IntersectMethod::RAY_MARCHING);
         ~SDFSubstraction() = default;
 
-        static Ref<SDFSubstraction> create(const Ref<SDFNode> &l, const Ref<SDFNode> &r);
+        static Ref<SDFSubstraction> create(const Ref<SDFNode> &l, const Ref<SDFNode> &r, float lambda = 1.0, IntersectMethod im = IntersectMethod::RAY_MARCHING);
 
         float value(const Point &p) const override;
 
         SDFType type() const override;
     };
+
+    /************************** SDF XOR ******************************/
 
     class SDFXOR final : public SDFBinaryOperator
     {
     public:
-        SDFXOR(const Ref<SDFNode> &l, const Ref<SDFNode> &r);
+        SDFXOR(const Ref<SDFNode> &l, const Ref<SDFNode> &r, float lambda = 1.0, IntersectMethod im = IntersectMethod::RAY_MARCHING);
         ~SDFXOR() = default;
 
-        static Ref<SDFXOR> create(const Ref<SDFNode> &l, const Ref<SDFNode> &r);
+        static Ref<SDFXOR> create(const Ref<SDFNode> &l, const Ref<SDFNode> &r, float lambda = 1.0, IntersectMethod im = IntersectMethod::RAY_MARCHING);
 
         float value(const Point &p) const override;
 
         SDFType type() const override;
     };
 
+    /************************** SDF Smooth Union ******************************/
 
     class SDFSmoothUnion : public SDFSmoothBinaryOperator
     {
     public:
-        SDFSmoothUnion(const Ref<SDFNode> &l, const Ref<SDFNode> &r, float k);
+        SDFSmoothUnion(const Ref<SDFNode> &l, const Ref<SDFNode> &r, float k, float lambda = 1.0, IntersectMethod im = IntersectMethod::RAY_MARCHING);
         ~SDFSmoothUnion() = default;
 
-        static Ref<SDFSmoothUnion> create(const Ref<SDFNode> &l, const Ref<SDFNode> &r, float k);
+        static Ref<SDFSmoothUnion> create(const Ref<SDFNode> &l, const Ref<SDFNode> &r, float k, float lambda = 1.0, IntersectMethod im = IntersectMethod::RAY_MARCHING);
 
         float value(const Point &p) const override;
 
         SDFType type() const override;
     };
+
+    /************************** SDF Smooth Intersection ******************************/
 
     class SDFSmoothIntersection final : public SDFSmoothBinaryOperator
     {
     public:
-        SDFSmoothIntersection(const Ref<SDFNode> &l, const Ref<SDFNode> &r, float k);
+        SDFSmoothIntersection(const Ref<SDFNode> &l, const Ref<SDFNode> &r, float k, float lambda = 1.0, IntersectMethod im = IntersectMethod::RAY_MARCHING);
         ~SDFSmoothIntersection() = default;
 
-        static Ref<SDFSmoothIntersection> create(const Ref<SDFNode> &l, const Ref<SDFNode> &r, float k);
+        static Ref<SDFSmoothIntersection> create(const Ref<SDFNode> &l, const Ref<SDFNode> &r, float k, float lambda = 1.0, IntersectMethod im = IntersectMethod::RAY_MARCHING);
 
         float value(const Point &p) const override;
 
         SDFType type() const override;
     };
+
+    /************************** SDF Smooth Substraction ******************************/
 
     class SDFSmoothSubstraction final : public SDFSmoothBinaryOperator
     {
     public:
-        SDFSmoothSubstraction(const Ref<SDFNode> &l, const Ref<SDFNode> &r, float k);
+        SDFSmoothSubstraction(const Ref<SDFNode> &l, const Ref<SDFNode> &r, float k, float lambda = 1.0, IntersectMethod im = IntersectMethod::RAY_MARCHING);
         ~SDFSmoothSubstraction() = default;
 
-        static Ref<SDFSmoothSubstraction> create(const Ref<SDFNode> &l, const Ref<SDFNode> &r, float k);
+        static Ref<SDFSmoothSubstraction> create(const Ref<SDFNode> &l, const Ref<SDFNode> &r, float k, float lambda = 1.0, IntersectMethod im = IntersectMethod::RAY_MARCHING);
 
         float value(const Point &p) const override;
 
         SDFType type() const override;
     };
+
+    /************************** SDF Sphere ******************************/
 
     class SDFSphere final : public SDFNode
     {
@@ -265,13 +298,15 @@ namespace gm
 
         SDFType type() const override;
 
-        float& radius();
-        float& center();
+        float &radius();
+        float &center();
 
     private:
         Point m_center;
         float m_radius;
     };
+
+    /************************** SDF Box ******************************/
 
     class SDFBox final : public SDFNode
     {
@@ -285,32 +320,36 @@ namespace gm
 
         SDFType type() const override;
 
-        float& pmin();
-        float& pmax();
+        float &pmin();
+        float &pmax();
 
     private:
         Point m_pmin, m_pmax;
     };
 
+    /************************** SDF Plane ******************************/
+
     class SDFPlane final : public SDFNode
     {
     public:
-        SDFPlane(const Vector &normal, float h, float lambda = 1.0, IntersectMethod im = IntersectMethod::RAY_MARCHING);
+        SDFPlane(const Vector &normal, float height, float lambda = 1.0, IntersectMethod im = IntersectMethod::RAY_MARCHING);
         ~SDFPlane() = default;
 
-        static Ref<SDFPlane> create(const Vector &normal, float h, float l = 1.0, IntersectMethod im = IntersectMethod::RAY_MARCHING);
+        static Ref<SDFPlane> create(const Vector &normal, float height, float l = 1.0, IntersectMethod im = IntersectMethod::RAY_MARCHING);
 
         float value(const Point &p) const override;
 
         SDFType type() const override;
 
-        float& h();
-        float& normal();
+        float &height();
+        float &normal();
 
     private:
         Vector m_normal;
-        float m_h;
+        float m_height;
     };
+
+    /************************** SDF Torus ******************************/
 
     class SDFTorus final : public SDFNode
     {
@@ -324,12 +363,157 @@ namespace gm
 
         SDFType type() const override;
 
-        float& r();
-        float& R();
+        float &r();
+        float &R();
 
     private:
         float m_R, m_r;
     };
+
+    /************************** SDF Capsule ******************************/
+
+    class SDFCapsule final : public SDFNode
+    {
+    public:
+        SDFCapsule(float radius, float height, float lambda = 1.0, IntersectMethod im = IntersectMethod::RAY_MARCHING);
+        ~SDFCapsule() = default;
+
+        static Ref<SDFCapsule> create(float radius, float height, float l = 1.0, IntersectMethod im = IntersectMethod::RAY_MARCHING);
+
+        float value(const Point &p) const override;
+
+        SDFType type() const override;
+
+        float &radius();
+        float &height();
+
+    private:
+        float m_radius, m_height;
+    };
+
+    /************************** SDF Cylinder ******************************/
+
+    class SDFCylinder final : public SDFNode
+    {
+    public:
+        SDFCylinder(float radius, float height, float lambda = 1.0, IntersectMethod im = IntersectMethod::RAY_MARCHING);
+        ~SDFCylinder() = default;
+
+        static Ref<SDFCylinder> create(float radius, float height, float l = 1.0, IntersectMethod im = IntersectMethod::RAY_MARCHING);
+
+        float value(const Point &p) const override;
+
+        SDFType type() const override;
+
+        float &radius();
+        float &height();
+
+    private:
+        float m_radius, m_height;
+    };
+
+    /************************** SDF Translation ******************************/
+
+    class SDFTranslation final : public SDFUnaryOperator
+    {
+    public:
+        SDFTranslation(const Ref<SDFNode> &node, const Vector &t, float lambda = 1.0, IntersectMethod im = IntersectMethod::RAY_MARCHING);
+        virtual ~SDFTranslation() = default;
+
+        static Ref<SDFTranslation> create(const Ref<SDFNode> &node, const Vector &t, float l = 1.0, IntersectMethod im = IntersectMethod::RAY_MARCHING);
+
+        float value(const Point &p) const;
+
+        SDFType type() const;
+
+        float &translation();
+
+    private:
+        Vector m_translation;
+    };
+
+    /************************** SDF Rotation ******************************/
+
+    class SDFRotation : public SDFUnaryOperator
+    {
+    public:
+        SDFRotation(const Ref<SDFNode> &node, const Vector &axis, float angle, float lambda = 1.0, IntersectMethod im = IntersectMethod::RAY_MARCHING);
+        virtual ~SDFRotation() = default;
+
+        static Ref<SDFRotation> create(const Ref<SDFNode> &node, const Vector &axis, float angle, float l = 1.0, IntersectMethod im = IntersectMethod::RAY_MARCHING);
+
+        float value(const Point& p) const;
+
+        SDFType type() const;
+
+        float& axis(); 
+        float& angle(); 
+
+    protected: 
+        Vector m_axis; 
+        float m_angle; 
+    };
+
+    /************************** SDF Rotation X******************************/
+
+    class SDFRotationX : public SDFRotation
+    {
+    public:
+        SDFRotationX(const Ref<SDFNode> &node, float angle, float lambda = 1.0, IntersectMethod im = IntersectMethod::RAY_MARCHING);
+        virtual ~SDFRotationX() = default;
+
+        static Ref<SDFRotationX> create(const Ref<SDFNode> &node, float angle, float l = 1.0, IntersectMethod im = IntersectMethod::RAY_MARCHING);
+
+        SDFType type() const;
+    };
+
+    /************************** SDF Rotation Y ******************************/
+
+    class SDFRotationY : public SDFRotation
+    {
+    public:
+        SDFRotationY(const Ref<SDFNode> &node, float angle, float lambda = 1.0, IntersectMethod im = IntersectMethod::RAY_MARCHING);
+        virtual ~SDFRotationY() = default;
+
+        static Ref<SDFRotationY> create(const Ref<SDFNode> &node, float angle, float l = 1.0, IntersectMethod im = IntersectMethod::RAY_MARCHING);
+
+        SDFType type() const;
+    };
+
+    /************************** SDF Rotation Z ******************************/
+
+    class SDFRotationZ : public SDFRotation
+    {
+    public:
+        SDFRotationZ(const Ref<SDFNode> &node, float angle, float lambda = 1.0, IntersectMethod im = IntersectMethod::RAY_MARCHING);
+        virtual ~SDFRotationZ() = default;
+
+        static Ref<SDFRotationZ> create(const Ref<SDFNode> &node, float angle, float l = 1.0, IntersectMethod im = IntersectMethod::RAY_MARCHING);
+
+        SDFType type() const;
+    };
+
+    /************************** SDF Scale ******************************/
+
+    class SDFScale final : public SDFUnaryOperator
+    {
+    public:
+        SDFScale(const Ref<SDFNode> &node, float s, float lambda = 1.0, IntersectMethod im = IntersectMethod::RAY_MARCHING);
+        virtual ~SDFScale() = default;
+
+        static Ref<SDFScale> create(const Ref<SDFNode> &node, float s, float l = 1.0, IntersectMethod im = IntersectMethod::RAY_MARCHING);
+
+        float value(const Point &p) const override;
+
+        SDFType type() const;
+
+        float &scale();
+
+    private:
+        float m_scale;
+    };
+
+    /************************** SDF Tree ******************************/
 
     class SDFTree final : public SDFNode
     {
@@ -351,14 +535,14 @@ namespace gm
         Vector dichotomy(Vector, Vector, float, float, float) const;
 
         void root(const Ref<SDFNode> &node);
-        Ref<SDFNode>& root();
-
-    private: 
-        std::vector<SDFType> tree_type(const Ref<SDFNode>& node) const;
+        Ref<SDFNode> &root();
 
     private:
-        static int m_triangle_table[256][16]; //!< Two dimensionnal array storing the straddling edges for every marching cubes configuration.
-        static int m_edge_table[256];         //!< Array storing straddling edges for every marching cubes configuration.
+        std::vector<SDFType> tree_type(const Ref<SDFNode> &node) const;
+
+    private:
+        static int s_triangle_table[256][16]; //!< Two dimensionnal array storing the straddling edges for every marching cubes configuration.
+        static int s_edge_table[256];         //!< Array storing straddling edges for every marching cubes configuration.
 
     private:
         Ref<SDFNode> m_root;

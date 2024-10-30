@@ -5,6 +5,8 @@ namespace gm
     const float SDFNode::s_epsilon = 0.0001f;
     const int SDFNode::s_limit = 10000;
 
+    int SDFNode::s_value_call_count = 0;
+
     Point Ray::point(float t) const
     {
         return origin + direction * t;
@@ -69,6 +71,16 @@ namespace gm
         return {left(), right()};
     }
 
+    int SDFNode::value_call_count() const
+    {
+        return s_value_call_count;
+    }
+
+    void SDFNode::reset_value_call_count()
+    {
+        s_value_call_count = 0; 
+    }
+
     bool SDFNode::intersect_ray_marching(const Ray &ray, float eps) const
     {
         float t = 0.0;
@@ -102,7 +114,7 @@ namespace gm
 
     /********************** SDF Unary Operator ************************/
 
-    SDFUnaryOperator::SDFUnaryOperator(const Ref<SDFNode> &n) : SDFNode(), m_node(n)
+    SDFUnaryOperator::SDFUnaryOperator(const Ref<SDFNode> &n, float lambda, IntersectMethod im) : SDFNode(lambda, im), m_node(n)
     {
     }
 
@@ -118,17 +130,18 @@ namespace gm
 
     /********************** SDF Hull ************************/
 
-    SDFHull::SDFHull(const Ref<SDFNode> &n, float thickness) : SDFUnaryOperator(n), m_thickness(thickness)
+    SDFHull::SDFHull(const Ref<SDFNode> &n, float thickness, float lambda, IntersectMethod im) : SDFUnaryOperator(n, lambda, im), m_thickness(thickness)
     {
     }
 
-    Ref<SDFHull> SDFHull::create(const Ref<SDFNode> &n, float thickness)
+    Ref<SDFHull> SDFHull::create(const Ref<SDFNode> &n, float thickness, float l, IntersectMethod im)
     {
-        return create_ref<SDFHull>(n, thickness);
+        return create_ref<SDFHull>(n, thickness, l, im);
     }
 
     float SDFHull::value(const Point &p) const
     {
+        s_value_call_count++; 
         return abs(m_node->value(p)) - m_thickness * 0.5;
     }
 
@@ -144,7 +157,7 @@ namespace gm
 
     /********************** SDF Binary Operator ************************/
 
-    SDFBinaryOperator::SDFBinaryOperator(const Ref<SDFNode> &left, const Ref<SDFNode> &right) : SDFNode(), m_left(left), m_right(right)
+    SDFBinaryOperator::SDFBinaryOperator(const Ref<SDFNode> &left, const Ref<SDFNode> &right, float lambda, IntersectMethod im) : SDFNode(lambda, im), m_left(left), m_right(right)
     {
     }
 
@@ -160,7 +173,7 @@ namespace gm
 
     /********************** SDF Smooth Binary Operator ************************/
 
-    SDFSmoothBinaryOperator::SDFSmoothBinaryOperator(const Ref<SDFNode> &l, const Ref<SDFNode> &r, float k) : SDFBinaryOperator(l, r), m_k(k)
+    SDFSmoothBinaryOperator::SDFSmoothBinaryOperator(const Ref<SDFNode> &l, const Ref<SDFNode> &r, float k, float lambda, IntersectMethod im) : SDFBinaryOperator(l, r, lambda, im), m_k(k)
     {
     }
 
@@ -171,17 +184,18 @@ namespace gm
 
     /*************************** SDF Union *****************************/
 
-    SDFUnion::SDFUnion(const Ref<SDFNode> &left, const Ref<SDFNode> &right) : SDFBinaryOperator(left, right)
+    SDFUnion::SDFUnion(const Ref<SDFNode> &left, const Ref<SDFNode> &right, float lambda, IntersectMethod im) : SDFBinaryOperator(left, right, lambda, im)
     {
     }
 
-    Ref<SDFUnion> SDFUnion::create(const Ref<SDFNode> &l, const Ref<SDFNode> &r)
+    Ref<SDFUnion> SDFUnion::create(const Ref<SDFNode> &l, const Ref<SDFNode> &r, float lambda, IntersectMethod im)
     {
-        return create_ref<SDFUnion>(l, r);
+        return create_ref<SDFUnion>(l, r, lambda, im);
     }
 
     float SDFUnion::value(const Point &p) const
     {
+        s_value_call_count++; 
         return std::min(m_left->value(p), m_right->value(p));
     }
 
@@ -192,17 +206,18 @@ namespace gm
 
     /************************** SDF Intersection ****************************/
 
-    SDFIntersection::SDFIntersection(const Ref<SDFNode> &l, const Ref<SDFNode> &r) : SDFBinaryOperator(l, r)
+    SDFIntersection::SDFIntersection(const Ref<SDFNode> &l, const Ref<SDFNode> &r, float lambda, IntersectMethod im) : SDFBinaryOperator(l, r)
     {
     }
 
-    Ref<SDFIntersection> SDFIntersection::create(const Ref<SDFNode> &l, const Ref<SDFNode> &r)
+    Ref<SDFIntersection> SDFIntersection::create(const Ref<SDFNode> &l, const Ref<SDFNode> &r, float lambda, IntersectMethod im)
     {
-        return create_ref<SDFIntersection>(l, r);
+        return create_ref<SDFIntersection>(l, r, lambda, im);
     }
 
     float SDFIntersection::value(const Point &p) const
     {
+        s_value_call_count++; 
         return std::max(m_left->value(p), m_right->value(p));
     }
 
@@ -213,17 +228,18 @@ namespace gm
 
     /************************** SDF Substraction ****************************/
 
-    SDFSubstraction::SDFSubstraction(const Ref<SDFNode> &l, const Ref<SDFNode> &r) : SDFBinaryOperator(l, r)
+    SDFSubstraction::SDFSubstraction(const Ref<SDFNode> &l, const Ref<SDFNode> &r, float lambda, IntersectMethod im) : SDFBinaryOperator(l, r, lambda, im)
     {
     }
 
-    Ref<SDFSubstraction> SDFSubstraction::create(const Ref<SDFNode> &l, const Ref<SDFNode> &r)
+    Ref<SDFSubstraction> SDFSubstraction::create(const Ref<SDFNode> &l, const Ref<SDFNode> &r, float lambda, IntersectMethod im)
     {
-        return create_ref<SDFSubstraction>(l, r);
+        return create_ref<SDFSubstraction>(l, r, lambda, im);
     }
 
     float SDFSubstraction::value(const Point &p) const
     {
+        s_value_call_count++; 
         return std::max(m_left->value(p), -m_right->value(p));
     }
 
@@ -234,17 +250,18 @@ namespace gm
 
     /************************** SDF XOR ****************************/
 
-    SDFXOR::SDFXOR(const Ref<SDFNode> &l, const Ref<SDFNode> &r) : SDFBinaryOperator(l, r)
+    SDFXOR::SDFXOR(const Ref<SDFNode> &l, const Ref<SDFNode> &r, float lambda, IntersectMethod im) : SDFBinaryOperator(l, r, lambda, im)
     {
     }
 
-    Ref<SDFXOR> SDFXOR::create(const Ref<SDFNode> &l, const Ref<SDFNode> &r)
+    Ref<SDFXOR> SDFXOR::create(const Ref<SDFNode> &l, const Ref<SDFNode> &r, float lambda, IntersectMethod im)
     {
-        return std::make_shared<SDFXOR>(l, r);
+        return std::make_shared<SDFXOR>(l, r, lambda, im);
     }
 
     float SDFXOR::value(const Point &p) const
     {
+        s_value_call_count++; 
         float fA = m_left->value(p);
         float fB = m_right->value(p);
         return std::max(std::min(fA, fB), -std::max(fA, fB));
@@ -257,22 +274,24 @@ namespace gm
 
     /************************** SDF Smooth Union ****************************/
 
-    SDFSmoothUnion::SDFSmoothUnion(const Ref<SDFNode> &l, const Ref<SDFNode> &r, float k) : SDFSmoothBinaryOperator(l, r, k)
+    SDFSmoothUnion::SDFSmoothUnion(const Ref<SDFNode> &l, const Ref<SDFNode> &r, float k, float lambda, IntersectMethod im) : SDFSmoothBinaryOperator(l, r, k, lambda, im)
     {
     }
 
-    Ref<SDFSmoothUnion> SDFSmoothUnion::create(const Ref<SDFNode> &l, const Ref<SDFNode> &r, float k)
+    Ref<SDFSmoothUnion> SDFSmoothUnion::create(const Ref<SDFNode> &l, const Ref<SDFNode> &r, float k, float lambda, IntersectMethod im)
     {
-        return std::make_shared<SDFSmoothUnion>(l, r, k);
+        return std::make_shared<SDFSmoothUnion>(l, r, k, lambda, im);
     }
 
     float SDFSmoothUnion::value(const Point &p) const
     {
+        s_value_call_count++; 
         float fA = m_left->value(p);
         float fB = m_right->value(p);
         float h = std::max(m_k - abs(fA - fB), 0.f);
 
-        return std::min(fA, fB) - h * h * 0.25 / m_k;
+        float g = m_k > 0. ? h * h * 0.25 / m_k : 0.0;
+        return std::min(fA, fB) - g;
     }
 
     SDFType SDFSmoothUnion::type() const
@@ -282,22 +301,24 @@ namespace gm
 
     /************************** SDF Smooth Intersection ****************************/
 
-    SDFSmoothIntersection::SDFSmoothIntersection(const Ref<SDFNode> &l, const Ref<SDFNode> &r, float k) : SDFSmoothBinaryOperator(l, r, k)
+    SDFSmoothIntersection::SDFSmoothIntersection(const Ref<SDFNode> &l, const Ref<SDFNode> &r, float k, float lambda, IntersectMethod im) : SDFSmoothBinaryOperator(l, r, k, lambda, im)
     {
     }
 
-    Ref<SDFSmoothIntersection> SDFSmoothIntersection::create(const Ref<SDFNode> &l, const Ref<SDFNode> &r, float k)
+    Ref<SDFSmoothIntersection> SDFSmoothIntersection::create(const Ref<SDFNode> &l, const Ref<SDFNode> &r, float k, float lambda, IntersectMethod im)
     {
-        return std::make_shared<SDFSmoothIntersection>(l, r, k);
+        return std::make_shared<SDFSmoothIntersection>(l, r, k, lambda, im);
     }
 
     float SDFSmoothIntersection::value(const Point &p) const
     {
+        s_value_call_count++; 
         float fA = m_left->value(p);
         float fB = m_right->value(p);
         float h = std::max(m_k - abs(fA - fB), 0.f);
 
-        return std::max(fA, fB) + h * h * 0.25 / m_k;
+        float g = m_k > 0. ? h * h * 0.25 / m_k : 0.0;
+        return std::max(fA, fB) + g;
     }
 
     SDFType SDFSmoothIntersection::type() const
@@ -307,22 +328,24 @@ namespace gm
 
     /************************** SDF Smooth Substraction ****************************/
 
-    SDFSmoothSubstraction::SDFSmoothSubstraction(const Ref<SDFNode> &l, const Ref<SDFNode> &r, float k) : SDFSmoothBinaryOperator(l, r, k)
+    SDFSmoothSubstraction::SDFSmoothSubstraction(const Ref<SDFNode> &l, const Ref<SDFNode> &r, float k, float lambda, IntersectMethod im) : SDFSmoothBinaryOperator(l, r, k, lambda, im)
     {
     }
 
-    Ref<SDFSmoothSubstraction> SDFSmoothSubstraction::create(const Ref<SDFNode> &l, const Ref<SDFNode> &r, float k)
+    Ref<SDFSmoothSubstraction> SDFSmoothSubstraction::create(const Ref<SDFNode> &l, const Ref<SDFNode> &r, float k, float lambda, IntersectMethod im)
     {
-        return create_ref<SDFSmoothSubstraction>(l, r, k);
+        return create_ref<SDFSmoothSubstraction>(l, r, k, lambda, im);
     }
 
     float SDFSmoothSubstraction::value(const Point &p) const
     {
+        s_value_call_count++; 
         float fA = m_left->value(p);
         float fB = m_right->value(p);
         float h = std::max(m_k - abs(fA + fB), 0.f);
 
-        return std::max(fA, -fB) + h * h * 0.25 / m_k;
+        float g = m_k > 0. ? h * h * 0.25 / m_k : 0.0;
+        return std::max(fA, -fB) + g;
     }
 
     SDFType SDFSmoothSubstraction::type() const
@@ -343,6 +366,7 @@ namespace gm
 
     float SDFSphere::value(const Point &p) const
     {
+        s_value_call_count++; 
         Vector cp(m_center, p);
         return length(cp) - m_radius;
     }
@@ -375,6 +399,7 @@ namespace gm
 
     float SDFBox::value(const Point &p) const
     {
+        s_value_call_count++; 
         Vector q = Vector(abs(p) - ((m_pmax - m_pmin) * 0.5));
         return std::min(std::max(q(0), std::max(q(1), q(2))), 0.f) + length(max(q, Vector(0)));
     }
@@ -396,18 +421,19 @@ namespace gm
 
     /************************** SDF Plane ******************************/
 
-    SDFPlane::SDFPlane(const Vector &normal, float h, float lambda, IntersectMethod im) : SDFNode(lambda, im), m_normal(normal), m_h(h)
+    SDFPlane::SDFPlane(const Vector &normal, float height, float lambda, IntersectMethod im) : SDFNode(lambda, im), m_normal(normal), m_height(height)
     {
     }
 
-    Ref<SDFPlane> SDFPlane::create(const Vector &normal, float h, float l, IntersectMethod im)
+    Ref<SDFPlane> SDFPlane::create(const Vector &normal, float height, float l, IntersectMethod im)
     {
-        return std::make_shared<SDFPlane>(normal, h, l, im);
+        return std::make_shared<SDFPlane>(normal, height, l, im);
     }
 
     float SDFPlane::value(const Point &p) const
     {
-        return dot(Vector(p), m_normal) + m_h;
+        s_value_call_count++; 
+        return dot(Vector(p), m_normal) + m_height;
     }
 
     SDFType SDFPlane::type() const
@@ -415,9 +441,9 @@ namespace gm
         return SDFType::PRIMITIVE_PLANE;
     }
 
-    float &SDFPlane::h()
+    float &SDFPlane::height()
     {
-        return m_h;
+        return m_height;
     }
 
     float &SDFPlane::normal()
@@ -438,6 +464,7 @@ namespace gm
 
     float SDFTorus::value(const Point &p) const
     {
+        s_value_call_count++; 
         vec2 q = vec2(length({p.x, p.z}) - m_R, p.y);
         return length(q) - m_r;
     }
@@ -455,6 +482,211 @@ namespace gm
     float &SDFTorus::R()
     {
         return m_R;
+    }
+
+    /************************** SDF Capsule ******************************/
+
+    SDFCapsule::SDFCapsule(float radius, float height, float lambda, IntersectMethod im) : SDFNode(lambda, im), m_radius(radius), m_height(height)
+    {
+    }
+
+    Ref<SDFCapsule> SDFCapsule::create(float radius, float height, float l, IntersectMethod im)
+    {
+        return std::make_shared<SDFCapsule>(radius, height, l, im);
+    }
+
+    float SDFCapsule::value(const Point &p) const
+    {
+        s_value_call_count++; 
+        Vector point = Vector(p);
+        point.y -= std::clamp(p.y, 0.f, m_height);
+        return length(point) - m_radius;
+    }
+
+    SDFType SDFCapsule::type() const
+    {
+        return SDFType::PRIMITIVE_CAPSULE;
+    }
+
+    float &SDFCapsule::radius()
+    {
+        return m_radius;
+    }
+
+    float &SDFCapsule::height()
+    {
+        return m_height;
+    }
+
+    /************************** SDF Cylinder ******************************/
+
+    SDFCylinder::SDFCylinder(float radius, float height, float lambda, IntersectMethod im) : SDFNode(lambda, im), m_radius(radius), m_height(height)
+    {
+    }
+
+    Ref<SDFCylinder> SDFCylinder::create(float radius, float height, float l, IntersectMethod im)
+    {
+        return std::make_shared<SDFCylinder>(radius, height, l, im);
+    }
+
+    float SDFCylinder::value(const Point &p) const
+    {
+        s_value_call_count++; 
+        vec2 d = abs(vec2(length({p.x, p.z}), p.y)) - vec2(m_radius, m_height);
+        return std::min(std::max(d.x, d.y), 0.f) + length(max(d, 0));
+    }
+
+    SDFType SDFCylinder::type() const
+    {
+        return SDFType::PRIMITIVE_CYLINDER;
+    }
+
+    float &SDFCylinder::radius()
+    {
+        return m_radius;
+    }
+
+    float &SDFCylinder::height()
+    {
+        return m_height;
+    }
+
+    /************************** SDF Translation ******************************/
+
+    SDFTranslation::SDFTranslation(const Ref<SDFNode> &node, const Vector &t, float lambda, IntersectMethod im) : SDFUnaryOperator(node, lambda, im), m_translation(t) 
+    {
+    }
+
+    Ref<SDFTranslation> SDFTranslation::create(const Ref<SDFNode> &node, const Vector &t, float l, IntersectMethod im)
+    {
+
+        return std::make_shared<SDFTranslation>(node, t, l, im);
+    }
+
+    float SDFTranslation::value(const Point &p) const
+    {
+        s_value_call_count++; 
+        Transform tf = Translation(m_translation).inverse();
+        return m_node->value(tf(p));
+    }
+
+    SDFType SDFTranslation::type() const
+    {
+        return SDFType::TRANSFORM_TRANSLATION;
+    }
+
+    float &SDFTranslation::translation()
+    {
+        return m_translation.x;
+    }
+
+    /************************** SDF Rotation ******************************/
+
+    SDFRotation::SDFRotation(const Ref<SDFNode> &node, const Vector &axis, float angle, float lambda, IntersectMethod im) : SDFUnaryOperator(node, lambda, im), m_axis(axis), m_angle(angle)
+    {
+    }
+
+    Ref<SDFRotation> SDFRotation::create(const Ref<SDFNode> &node, const Vector &axis, float angle, float lambda, IntersectMethod im)
+    {
+        return std::make_shared<SDFRotation>(node, axis, angle, lambda, im);
+    }
+
+    float SDFRotation::value(const Point &p) const
+    {
+        s_value_call_count++; 
+        Transform tf = Rotation(m_axis, m_angle).inverse();
+        return m_node->value(tf(p));
+    }
+
+    SDFType SDFRotation::type() const
+    {
+        return SDFType::TRANSFORM_ROTATION;
+    }
+
+    float &SDFRotation::axis()
+    {
+        return m_axis.x; 
+    }
+
+    float &SDFRotation::angle()
+    {
+        return m_angle;
+    }    
+
+    /************************** SDF Rotation X ******************************/
+
+    SDFRotationX::SDFRotationX(const Ref<SDFNode> &node, float angle, float lambda, IntersectMethod im) : SDFRotation(node, {1., 0., 0.}, angle, lambda, im)
+    {
+    }
+
+    Ref<SDFRotationX> SDFRotationX::create(const Ref<SDFNode> &node, float angle, float lambda, IntersectMethod im)
+    {
+        return std::make_shared<SDFRotationX>(node, angle, lambda, im);
+    }
+
+    SDFType SDFRotationX::type() const
+    {
+        return SDFType::TRANSFORM_ROTATION_X;
+    }
+
+    /************************** SDF Rotation Y ******************************/
+
+    SDFRotationY::SDFRotationY(const Ref<SDFNode> &node, float angle, float lambda, IntersectMethod im) : SDFRotation(node, {0., 1., 0.}, angle, lambda, im)
+    {
+    }
+
+    Ref<SDFRotationY> SDFRotationY::create(const Ref<SDFNode> &node, float angle, float lambda, IntersectMethod im)
+    {
+        return std::make_shared<SDFRotationY>(node, angle, lambda, im);
+    }
+
+    SDFType SDFRotationY::type() const
+    {
+        return SDFType::TRANSFORM_ROTATION_Y;
+    }
+
+    /************************** SDF Rotation Z ******************************/
+
+    SDFRotationZ::SDFRotationZ(const Ref<SDFNode> &node, float angle, float lambda, IntersectMethod im) : SDFRotation(node, {0., 0., 1.}, angle, lambda, im)
+    {
+    }
+
+    Ref<SDFRotationZ> SDFRotationZ::create(const Ref<SDFNode> &node, float angle, float lambda, IntersectMethod im)
+    {
+        return std::make_shared<SDFRotationZ>(node, angle, lambda, im);
+    }
+
+    SDFType SDFRotationZ::type() const
+    {
+        return SDFType::TRANSFORM_ROTATION_Z;
+    }
+
+    /************************** SDF Scale ******************************/
+
+    SDFScale::SDFScale(const Ref<SDFNode> &node, float s, float lambda, IntersectMethod im) : SDFUnaryOperator(node, lambda, im), m_scale(s)
+    {
+    }
+
+    Ref<SDFScale> SDFScale::create(const Ref<SDFNode> &node, float s, float l, IntersectMethod im)
+    {
+
+        return std::make_shared<SDFScale>(node, s, l, im);
+    }
+
+    float SDFScale::value(const Point &p) const
+    {
+        s_value_call_count++; 
+        return m_node->value(p / m_scale) * m_scale;
+    }
+
+    SDFType SDFScale::type() const
+    {
+        return SDFType::TRANSFORM_SCALE;
+    }
+
+    float &SDFScale::scale()
+    {
+        return m_scale;
     }
 
     /************************** SDF Tree ******************************/
@@ -678,9 +910,9 @@ namespace gm
                         e[10] = ez[i * ny + (j + 1)];
                         e[11] = ez[(i + 1) * ny + (j + 1)];
 
-                        for (int h = 0; m_triangle_table[cubeindex][h] != -1; h += 3)
+                        for (int h = 0; s_triangle_table[cubeindex][h] != -1; h += 3)
                         {
-                            mesh->triangle(e[m_triangle_table[cubeindex][h]], e[m_triangle_table[cubeindex][h + 1]], e[m_triangle_table[cubeindex][h + 2]]);
+                            mesh->triangle(e[s_triangle_table[cubeindex][h]], e[s_triangle_table[cubeindex][h + 1]], e[s_triangle_table[cubeindex][h + 2]]);
                         }
                     }
                 }
@@ -793,7 +1025,7 @@ namespace gm
         return normal;
     }
 
-    int SDFTree::m_edge_table[256] = {
+    int SDFTree::s_edge_table[256] = {
         0, 273, 545, 816, 1042, 1283, 1587, 1826, 2082, 2355, 2563, 2834, 3120, 3361, 3601, 3840,
         324, 85, 869, 628, 1366, 1095, 1911, 1638, 2406, 2167, 2887, 2646, 3444, 3173, 3925, 3652,
         644, 917, 165, 436, 1686, 1927, 1207, 1446, 2726, 2999, 2183, 2454, 3764, 4005, 3221, 3460,
@@ -811,7 +1043,7 @@ namespace gm
         3652, 3925, 3173, 3444, 2646, 2887, 2167, 2406, 1638, 1911, 1095, 1366, 628, 869, 85, 324,
         3840, 3601, 3361, 3120, 2834, 2563, 2355, 2082, 1826, 1587, 1283, 1042, 816, 545, 273, 0};
 
-    int SDFTree::m_triangle_table[256][16] = {
+    int SDFTree::s_triangle_table[256][16] = {
         {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
         {0, 8, 4, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
         {0, 5, 9, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
@@ -1121,6 +1353,12 @@ namespace gm
             return "TRANSFORM_TRANSLATION";
         case SDFType::TRANSFORM_ROTATION:
             return "TRANSFORM_ROTATION";
+        case SDFType::TRANSFORM_ROTATION_X:
+            return "TRANSFORM_ROTATION_X";
+        case SDFType::TRANSFORM_ROTATION_Y:
+            return "TRANSFORM_ROTATION_Y";
+        case SDFType::TRANSFORM_ROTATION_Z:
+            return "TRANSFORM_ROTATION_Z";
         case SDFType::TRANSFORM_SCALE:
             return "TRANSFORM_SCALE";
         }

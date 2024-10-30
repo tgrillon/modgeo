@@ -79,32 +79,35 @@ int App::prerender()
         }
     }
 
-    const char *orbiter_filename = "app_orbiter.txt";
-    // copy / export / write orbiter
-    if (key_state('c'))
+    if (!io.WantCaptureKeyboard)
     {
-        clear_key_state('c');
-        m_camera.write_orbiter(orbiter_filename);
-    }
-    // paste / read orbiter
-    if (key_state('o'))
-    {
-        clear_key_state('o');
+        const char *orbiter_filename = "app_orbiter.txt";
+        // copy / export / write orbiter
+        if (key_state('c'))
+        {
+            clear_key_state('c');
+            m_camera.write_orbiter(orbiter_filename);
+        }
+        // paste / read orbiter
+        if (key_state('o'))
+        {
+            clear_key_state('o');
 
-        Orbiter tmp;
-        if (tmp.read_orbiter(orbiter_filename) < 0)
-            // ne pas modifer la camera en cas d'erreur de lecture...
-            tmp = m_camera;
+            Orbiter tmp;
+            if (tmp.read_orbiter(orbiter_filename) < 0)
+                // ne pas modifer la camera en cas d'erreur de lecture...
+                tmp = m_camera;
 
-        m_camera = tmp;
-    }
+            m_camera = tmp;
+        }
 
-    // screenshot
-    if (key_state('s'))
-    {
-        static int calls = 1;
-        clear_key_state('s');
-        screenshot("app", calls++);
+        // screenshot
+        if (key_state('s'))
+        {
+            static int calls = 1;
+            clear_key_state('s');
+            screenshot("app", calls++);
+        }
     }
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

@@ -265,9 +265,15 @@ int Viewer::render_any()
     DrawParam param;
     param.model(model).view(view).projection(projection);
 
+    ImGuiIO &io = ImGui::GetIO();
+    (void)io;
+
     if (m_spline_demo)
     {
-        handle_event_spline();
+        if (!io.WantCaptureKeyboard && !io.WantCaptureMouse)
+        {
+            handle_event_spline();
+        }
 
         if (m_mSpline->has_position())
         {
@@ -312,7 +318,10 @@ int Viewer::render_any()
     }
     else if (m_patch_demo)
     {
-        handle_event_patch();
+        if (!io.WantCaptureKeyboard && !io.WantCaptureMouse)
+        {
+            handle_event_patch();
+        }
 
         if (m_mPatch->has_position())
         {
@@ -358,7 +367,10 @@ int Viewer::render_any()
     }
     else if (m_sdf_demo)
     {
-        handle_event_sdf();
+        if (!io.WantCaptureKeyboard && !io.WantCaptureMouse)
+        {
+            handle_event_sdf();
+        }
 
         if (m_mSDF->has_position())
         {
@@ -407,6 +419,7 @@ int Viewer::render_any()
 
 int Viewer::handle_event_spline()
 {
+
     if (key_state(SDLK_f))
     {
         clear_key_state(SDLK_f);
@@ -492,6 +505,7 @@ int Viewer::render_ui()
         (void)io;
 
         io.WantCaptureMouse = false;
+        io.WantCaptureKeyboard = false;
     }
 
     // we access the ImGui window size
@@ -538,6 +552,39 @@ int Viewer::render_ui()
                 render_params_patch();
             else if (m_sdf_demo)
                 render_params_sdf();
+        }
+
+        ImGui::InputTextWithHint("Filename", "ex : my_mesh", &m_filename);
+        if (ImGui::Button("Save mesh"))
+        {
+
+            if (m_filename.empty())
+            {
+                std::random_device rd;
+                std::mt19937 gen(rd());
+                std::uniform_int_distribution<> dis(1000, 9999);
+
+                if (m_spline_demo)
+                    m_filename = "spline_";
+                else if (m_patch_demo)
+                    m_filename = "patch_";
+                else if (m_sdf_demo)
+                    m_filename = "sdf_";
+
+                int id = dis(gen);
+                m_filename = m_filename + std::to_string(id);
+            }
+
+            std::string fullpath = std::string(OBJ_DIR) + "/" + m_filename + ".obj";
+
+            if (m_spline_demo)
+                save_spline(fullpath);
+            else if (m_patch_demo)
+                save_patch(fullpath);
+            else if (m_sdf_demo)
+                save_sdf(fullpath);
+
+            m_filename = "";
         }
         ImGui::End();
 
@@ -627,7 +674,7 @@ int Viewer::render_demo_buttons()
         {
             ImGui::SetTooltip(!m_sdf_demo ? "Activate patch demo." : "Patch demo is active.");
         }
-        ImGui::EndDisabled(); 
+        ImGui::EndDisabled();
     }
 
     return 0;
@@ -649,8 +696,6 @@ int Viewer::render_stats_patch()
 
 int Viewer::render_params_patch()
 {
-    ImVec2 sz = ImVec2(-FLT_MIN, 45.0f);
-
     ImGui::SliderInt("Resolution", &m_patch_resolution, 4, 1000);
     ImGui::SliderInt("#Control points", &m_nb_control_points_patch, 4, 31);
     ImGui::Text("You can use the two variables 'u' and 'v' in each expression below :");
@@ -665,7 +710,7 @@ int Viewer::render_params_patch()
     ImGui::SameLine();
     ImGui::Checkbox("Grid", &m_show_patch_grid);
     ImGui::NewLine();
-    if (ImGui::Button("Render", sz))
+    if (ImGui::Button("Render"))
     {
 
         set_expression_string(m_expr_patch, surface_function_input_x, 0);
@@ -730,8 +775,6 @@ int Viewer::render_stats_spline()
 
 int Viewer::render_params_spline()
 {
-    ImVec2 sz = ImVec2(-FLT_MIN, 45.0f);
-
     ImGui::SliderInt("Resolution", &m_spline_resolution, 3, 1000);
     ImGui::SliderInt("#Control points", &m_nb_control_points_spline, 2, 31);
     ImGui::Text("You can use a variable 't' in each expression below :");
@@ -747,7 +790,7 @@ int Viewer::render_params_spline()
     ImGui::Checkbox("Curve", &m_show_spline_curve);
     ImGui::Text("You can use the two variables 't' and 'a' (angle value) in the expression below :");
     ImGui::InputText("Radial Function", spline_radial_function_input, IM_ARRAYSIZE(spline_radial_function_input));
-    if (ImGui::Button("Render", sz))
+    if (ImGui::Button("Render"))
     {
         set_expression_string(m_expr_spline, curve_function_input_x, 0);
         set_expression_string(m_expr_spline, curve_function_input_y, 1);
@@ -801,6 +844,7 @@ int Viewer::render_stats_sdf()
     ImGui::Text("#Triangle : %i ", m_mSDF->triangle_count());
     ImGui::Text("#vertex : %i ", m_mSDF->vertex_count());
     ImGui::Text("Poligonize Time : %i ms %i us", m_ipolytms, m_ipolytus);
+    ImGui::Text("Value call count : %i", m_sdf_tree->value_call_count());
     return 0;
 }
 
@@ -876,9 +920,24 @@ int Viewer::render_menu_bar()
     return 0;
 }
 
+void Viewer::save_spline(const std::string &fullpath) const
+{
+    write_mesh(*m_mSpline, fullpath.c_str());
+}
+
+void Viewer::save_patch(const std::string &fullpath) const
+{
+    write_mesh(*m_mPatch, fullpath.c_str());
+}
+
+void Viewer::save_sdf(const std::string &fullpath) const
+{
+    write_mesh(*m_mSDF, fullpath.c_str());
+}
+
 void Viewer::set_sdf_primitive()
 {
-    ImGui::Text("Selected Primitive : %s", (m_sdf_node ? gm::type_str(m_sdf_node->type()) : "NULL"));
+    ImGui::Text("Selected primitive : %s", (m_sdf_node ? gm::type_str(m_sdf_node->type()) : "NULL"));
     ImGui::Text("Selected Operator : %s", (m_sdf_root ? gm::type_str(m_sdf_root->type()) : "NULL"));
     if (ImGui::CollapsingHeader("Select Primitive"))
     {
@@ -932,6 +991,32 @@ void Viewer::set_sdf_primitive()
             }
             ImGui::TreePop();
         }
+
+        if (ImGui::TreeNode("Capsule"))
+        {
+            static float r = 0.5;
+            static float h = 1.0;
+            ImGui::InputFloat("r", &h);
+            ImGui::InputFloat("h", &r);
+            if (ImGui::Button("Add Capsule"))
+            {
+                m_sdf_node = gm::SDFCapsule::create(r, h);
+            }
+            ImGui::TreePop();
+        }
+
+        if (ImGui::TreeNode("Cylinder"))
+        {
+            static float r = 0.5;
+            static float h = 1.0;
+            ImGui::InputFloat("r", &h);
+            ImGui::InputFloat("h", &r);
+            if (ImGui::Button("Add Cylinder"))
+            {
+                m_sdf_node = gm::SDFCylinder::create(r, h);
+            }
+            ImGui::TreePop();
+        }
     }
 }
 
@@ -939,66 +1024,142 @@ void Viewer::set_sdf_operator()
 {
     if (ImGui::CollapsingHeader("Select Operator"))
     {
-        if (ImGui::TreeNode("Union"))
+        ImGui::BeginDisabled(m_sdf_root == nullptr || m_sdf_node == nullptr);
+        if (ImGui::CollapsingHeader("Binary Operator"))
         {
-            if (ImGui::Button("Add Union"))
+            if (ImGui::TreeNode("Union"))
             {
-                m_sdf_root = gm::SDFUnion::create(m_sdf_root, m_sdf_node);
+                if (ImGui::Button("Add Union"))
+                {
+                    m_sdf_root = gm::SDFUnion::create(m_sdf_root, m_sdf_node);
+                }
+                ImGui::TreePop();
             }
-            ImGui::TreePop();
+            if (ImGui::TreeNode("Intersection"))
+            {
+                if (ImGui::Button("Add Intersection"))
+                {
+                    m_sdf_root = gm::SDFIntersection::create(m_sdf_root, m_sdf_node);
+                }
+                ImGui::TreePop();
+            }
+            if (ImGui::TreeNode("Substraction"))
+            {
+                if (ImGui::Button("Add Substraction"))
+                {
+                    m_sdf_root = gm::SDFSubstraction::create(m_sdf_root, m_sdf_node);
+                }
+                ImGui::TreePop();
+            }
+            if (ImGui::TreeNode("Smooth Union"))
+            {
+                ImGui::SliderFloat("K (smooth constante)", &m_smooth_k, 0.f, 1.f);
+                if (ImGui::Button("Add Smooth Union"))
+                {
+                    m_sdf_root = gm::SDFSmoothUnion::create(m_sdf_root, m_sdf_node, m_smooth_k);
+                }
+                ImGui::TreePop();
+            }
+            if (ImGui::TreeNode("Smooth Intersection"))
+            {
+                ImGui::SliderFloat("K (smooth constante)", &m_smooth_k, 0.f, 1.f);
+                if (ImGui::Button("Add Smooth Intersection"))
+                {
+                    m_sdf_root = gm::SDFSmoothIntersection::create(m_sdf_root, m_sdf_node, m_smooth_k);
+                }
+                ImGui::TreePop();
+            }
+            if (ImGui::TreeNode("Smooth Substraction"))
+            {
+                ImGui::SliderFloat("K (smooth constante)", &m_smooth_k, 0.f, 1.f);
+                if (ImGui::Button("Add Smooth Substraction"))
+                {
+                    m_sdf_root = gm::SDFSmoothSubstraction::create(m_sdf_root, m_sdf_node, m_smooth_k);
+                }
+                ImGui::TreePop();
+            }
         }
-        if (ImGui::TreeNode("Intersection"))
+        ImGui::EndDisabled();
+
+        auto &node = m_sdf_root ? m_sdf_root : m_sdf_node;
+        if (ImGui::CollapsingHeader("Unary Operator"))
         {
-            if (ImGui::Button("Add Intersection"))
+            if (ImGui::TreeNode("Hull"))
             {
-                m_sdf_root = gm::SDFIntersection::create(m_sdf_root, m_sdf_node);
+                static float thickness = 0.1f;
+                ImGui::InputFloat("Thickness", &thickness);
+                if (ImGui::Button("Add Hull"))
+                {
+                    node = gm::SDFHull::create(node, thickness);
+                }
+                ImGui::TreePop();
             }
-            ImGui::TreePop();
-        }
-        if (ImGui::TreeNode("Substraction"))
-        {
-            if (ImGui::Button("Add Substraction"))
+
+            if (ImGui::CollapsingHeader("Transform"))
             {
-                m_sdf_root = gm::SDFSubstraction::create(m_sdf_root, m_sdf_node);
+                if (ImGui::TreeNode("Translation"))
+                {
+                    static Vector t = {0., 0., 0.};
+                    ImGui::InputFloat3("Translation vector", &t.x);
+                    if (ImGui::Button("Add Translation"))
+                    {
+                        node = gm::SDFTranslation::create(node, t);
+                    }
+                    ImGui::TreePop();
+                }
+                if (ImGui::TreeNode("Rotation"))
+                {
+                    static Vector axis = {0., 0., 0.};
+                    static float angle = 0.;
+                    ImGui::InputFloat("Angle (in degrees)", &angle);
+                    ImGui::InputFloat3("Axis", &axis.x);
+                    if (ImGui::Button("Add Rotation"))
+                    {
+                        node = gm::SDFRotation::create(node, axis, angle);
+                    }
+                    ImGui::TreePop();
+                }
+                if (ImGui::TreeNode("RotationX"))
+                {
+                    static float angle = 0.;
+                    ImGui::InputFloat("Angle (in degrees)", &angle);
+                    if (ImGui::Button("Add RotationX"))
+                    {
+                        node = gm::SDFRotationX::create(node, angle);
+                    }
+                    ImGui::TreePop();
+                }
+                if (ImGui::TreeNode("RotationY"))
+                {
+                    static float angle = 0.;
+                    ImGui::InputFloat("Angle (in degrees)", &angle);
+                    if (ImGui::Button("Add RotationY"))
+                    {
+                        node = gm::SDFRotationY::create(node, angle);
+                    }
+                    ImGui::TreePop();
+                }
+                if (ImGui::TreeNode("RotationZ"))
+                {
+                    static float angle = 0.;
+                    ImGui::InputFloat("Angle (in degrees)", &angle);
+                    if (ImGui::Button("Add RotationZ"))
+                    {
+                        node = gm::SDFRotationZ::create(node, angle);
+                    }
+                    ImGui::TreePop();
+                }
+                if (ImGui::TreeNode("Scale"))
+                {
+                    static float scale = 0.;
+                    ImGui::InputFloat("Scale", &scale);
+                    if (ImGui::Button("Add Scale"))
+                    {
+                        node = gm::SDFScale::create(node, scale);
+                    }
+                    ImGui::TreePop();
+                }
             }
-            ImGui::TreePop();
-        }
-        if (ImGui::TreeNode("Smooth Union"))
-        {
-            ImGui::SliderFloat("K (smooth constante)", &m_smooth_k, 0.f, 1.f);
-            if (ImGui::Button("Add Smooth Union"))
-            {
-                m_sdf_root = gm::SDFSmoothUnion::create(m_sdf_root, m_sdf_node, m_smooth_k);
-            }
-            ImGui::TreePop();
-        }
-        if (ImGui::TreeNode("Smooth Intersection"))
-        {
-            ImGui::SliderFloat("K (smooth constante)", &m_smooth_k, 0.f, 1.f);
-            if (ImGui::Button("Add Smooth Intersection"))
-            {
-                m_sdf_root = gm::SDFSmoothIntersection::create(m_sdf_root, m_sdf_node, m_smooth_k);
-            }
-            ImGui::TreePop();
-        }
-        if (ImGui::TreeNode("Smooth Substraction"))
-        {
-            ImGui::SliderFloat("K (smooth constante)", &m_smooth_k, 0.f, 1.f);
-            if (ImGui::Button("Add Smooth Substraction"))
-            {
-                m_sdf_root = gm::SDFSmoothSubstraction::create(m_sdf_root, m_sdf_node, m_smooth_k);
-            }
-            ImGui::TreePop();
-        }
-        if (ImGui::TreeNode("Hull"))
-        {
-            static float thickness = 0.1f;
-            ImGui::InputFloat("Thickness", &thickness);
-            if (ImGui::Button("Add Hull"))
-            {
-                m_sdf_root = gm::SDFHull::create(m_sdf_root, thickness);
-            }
-            ImGui::TreePop();
         }
     }
 }
@@ -1026,8 +1187,8 @@ void Viewer::render_node_ui(Ref<gm::SDFNode> &node)
     {
         if (auto sphere = dynamic_cast<gm::SDFSphere *>(node.get()))
         {
-            ImGui::InputFloat3("cadius", &sphere->center());
-            ImGui::InputFloat("radius", &sphere->radius());
+            ImGui::InputFloat3("Center", &sphere->center());
+            ImGui::InputFloat("Radius", &sphere->radius());
         }
         else if (auto box = dynamic_cast<gm::SDFBox *>(node.get()))
         {
@@ -1041,16 +1202,51 @@ void Viewer::render_node_ui(Ref<gm::SDFNode> &node)
         }
         else if (auto plane = dynamic_cast<gm::SDFPlane *>(node.get()))
         {
-            ImGui::InputFloat3("normal", &plane->normal());
-            ImGui::InputFloat("h", &plane->h());
+            ImGui::InputFloat3("Normal", &plane->normal());
+            ImGui::InputFloat("Height", &plane->height());
+        }
+        else if (auto capsule = dynamic_cast<gm::SDFCapsule *>(node.get()))
+        {
+            ImGui::InputFloat("Radius", &capsule->radius());
+            ImGui::InputFloat("Height", &capsule->height());
+        }
+        else if (auto cylinder = dynamic_cast<gm::SDFCylinder *>(node.get()))
+        {
+            ImGui::InputFloat("Radius", &cylinder->radius());
+            ImGui::InputFloat("Height", &cylinder->height());
+        }
+        else if (auto translation = dynamic_cast<gm::SDFTranslation *>(node.get()))
+        {
+            ImGui::InputFloat3("Translation", &translation->translation());
+        }
+        else if (auto rotation_x = dynamic_cast<gm::SDFRotationX *>(node.get()))
+        {
+            ImGui::InputFloat("Angle (in degrees)", &rotation_x->angle());
+        }
+        else if (auto rotation_y = dynamic_cast<gm::SDFRotationY *>(node.get()))
+        {
+            ImGui::InputFloat("Angle (in degrees)", &rotation_y->angle());
+        }
+        else if (auto rotation_z = dynamic_cast<gm::SDFRotationZ *>(node.get()))
+        {
+            ImGui::InputFloat("Angle (in degrees)", &rotation_z->angle());
+        }
+        else if (auto rotation = dynamic_cast<gm::SDFRotation *>(node.get()))
+        {
+            ImGui::InputFloat("Angle (in degrees)", &rotation->angle());
+            ImGui::InputFloat3("Axis", &rotation->axis());
+        }
+        else if (auto scale = dynamic_cast<gm::SDFScale *>(node.get()))
+        {
+            ImGui::InputFloat("Scale", &scale->scale());
         }
         else if (auto smoothOP = dynamic_cast<gm::SDFSmoothBinaryOperator *>(node.get()))
         {
-            ImGui::SliderFloat("k", &smoothOP->k(), 0.f, 1.f);
+            ImGui::SliderFloat("K", &smoothOP->k(), 0.f, 1.f);
         }
         else if (auto hull = dynamic_cast<gm::SDFHull *>(node.get()))
         {
-            ImGui::InputFloat("k", &hull->thickness());
+            ImGui::InputFloat("Thickness", &hull->thickness());
         }
 
         auto [left, right] = node->children();
@@ -1064,7 +1260,9 @@ void Viewer::render_sdf_node_ui()
 {
     if (ImGui::Button("Render Tree"))
     {
-        if (!m_sdf_root && m_sdf_node) m_sdf_root = m_sdf_node;
+        m_sdf_tree->reset_value_call_count();
+        if (m_sdf_root == nullptr && m_sdf_node)
+            m_sdf_root = m_sdf_node;
 
         if (m_sdf_root)
         {
@@ -1073,7 +1271,7 @@ void Viewer::render_sdf_node_ui()
 
             m_mSDF_box = m_sdf_box.get_box(m_sdf_resolution, m_slide_x, m_slide_y, m_slide_z);
 
-            m_sdf_tree->root() = m_sdf_root; 
+            m_sdf_tree->root() = m_sdf_root;
 
             m_timer.start();
             m_mSDF = m_sdf_tree->polygonize(m_sdf_resolution, m_sdf_box);
@@ -1084,12 +1282,16 @@ void Viewer::render_sdf_node_ui()
 
             center_camera(*m_mSDF_box);
         }
+
+        m_sdf_node = nullptr;
+        m_node_1_selection = true;
     }
     ImGui::SameLine();
     if (ImGui::Button("Clear Tree"))
     {
         m_sdf_root = nullptr;
         m_sdf_node = nullptr;
+        m_node_1_selection = true;
         m_sdf_tree->root() = nullptr;
         m_mSDF->clear();
     }

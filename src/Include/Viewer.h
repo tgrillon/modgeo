@@ -42,6 +42,10 @@ private:
 
     int render_menu_bar();
 
+    void save_spline(const std::string& fullpath) const; 
+    void save_patch(const std::string& fullpath) const; 
+    void save_sdf(const std::string& fullpath) const; 
+
     void set_sdf_primitive();
     void set_sdf_operator();
     void build_sdf_tree();
@@ -67,10 +71,13 @@ private:
 
     Framebuffer m_framebuffer;
 
+    std::string m_filename{""}; 
+
     Ref<gm::SDFTree> m_sdf_tree;
     Ref<gm::SDFNode> m_sdf_node; 
     Ref<gm::SDFNode> m_sdf_root; 
 
+    bool m_node_1_selection{true}; 
 
     bool m_show_faces_spline{true};
     bool m_show_edges_spline{false};
