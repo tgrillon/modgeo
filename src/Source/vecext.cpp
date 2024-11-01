@@ -78,6 +78,11 @@ Vector max(const Vector &a, const Vector &b)
     return { std::max(a.x, b.x), std::max(a.y, b.y), std::max(a.z, b.z) };
 }
 
+Point operator%(const Point &p, int t)
+{
+    return { static_cast<int>(p.x) % t, static_cast<int>(p.y) % t, static_cast<int>(p.z) % t };
+}
+
 Vector abs( const Vector& a )
 {
     return { abs(a(0)), abs(a(1)), abs(a(2)) };
@@ -86,6 +91,11 @@ Vector abs( const Vector& a )
 Point abs( const Point& a )
 {
     return { abs(a(0)), abs(a(1)), abs(a(2)) };
+}
+
+Point round(const Point &a)
+{
+    return { round(a.x), round(a.y), round(a.z) };
 }
 
 vec2 abs(const vec2 &a)

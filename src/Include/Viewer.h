@@ -36,20 +36,18 @@ private:
     int render_params_sdf();
     int render_any();
 
-    int handle_event_spline();
-    int handle_event_patch();
-    int handle_event_sdf();
+    int handle_event();
 
     int render_menu_bar();
 
-    void save_spline(const std::string& fullpath) const; 
-    void save_patch(const std::string& fullpath) const; 
-    void save_sdf(const std::string& fullpath) const; 
+    void save_spline(const std::string &fullpath) const;
+    void save_patch(const std::string &fullpath) const;
+    void save_sdf(const std::string &fullpath) const;
 
     void set_sdf_primitive();
     void set_sdf_operator();
     void build_sdf_tree();
-    void render_node_ui(Ref<gm::SDFNode>& node);
+    void render_node_ui(Ref<gm::SDFNode> &node);
     void render_sdf_buttons();
 
 private:
@@ -71,23 +69,17 @@ private:
 
     Framebuffer m_framebuffer;
 
-    std::string m_filename{""}; 
+    std::string m_filename{""};
 
     Ref<gm::SDFTree> m_sdf_tree;
-    Ref<gm::SDFNode> m_sdf_node; 
-    Ref<gm::SDFNode> m_sdf_root; 
+    Ref<gm::SDFNode> m_sdf_node;
+    Ref<gm::SDFNode> m_sdf_root;
 
-    bool m_node_1_selection{true}; 
+    bool m_node_1_selection{true};
 
-    bool m_show_faces_spline{true};
-    bool m_show_edges_spline{false};
-    bool m_show_points_spline{false};
-    bool m_show_faces_patch{true};
-    bool m_show_edges_patch{false};
-    bool m_show_points_patch{false};
-    bool m_show_faces_implicit{true};
-    bool m_show_edges_implicit{false};
-    bool m_show_points_implicit{false};
+    bool m_show_faces{true};
+    bool m_show_edges{false};
+    bool m_show_points{false};
 
     float m_size_point{5.f};
     float m_size_edge{2.f};
@@ -95,7 +87,7 @@ private:
     float m_color_point[4]{0.0f, 0.0f, 1.0f, 1.0f};
     float m_color_edge[4]{1.0f, 1.0f, 0.0f, 1.0f};
 
-    float m_smooth_k {0.5};
+    float m_smooth_k{0.5};
 
     char spline_radial_function_input[256]{"1"};
     char curve_function_input_x[256]{"100 * t"};
@@ -130,6 +122,8 @@ private:
     int m_nb_control_points_spline{10};
 
     bool m_need_update{false};
+
+    bool m_apply_transform_on_root{false};
 
     int m_spolytms{0}, m_spolytus{0}; //! spline polygonize time
     int m_ppolytms{0}, m_ppolytus{0}; //! patch polygonize time

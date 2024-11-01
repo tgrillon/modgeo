@@ -142,6 +142,26 @@ namespace gm
         float m_thickness;
     };
 
+    /************************** SDF Repetition ******************************/
+
+    class SDFRepetition final : public SDFUnaryOperator
+    {
+    public:
+        SDFRepetition(const Ref<SDFNode> &n, float t, float lambda = 1.0, IntersectMethod im = IntersectMethod::RAY_MARCHING);
+        ~SDFRepetition() = default;
+
+        static Ref<SDFRepetition> create(const Ref<SDFNode> &n, float t, float lambda = 1.0, IntersectMethod im = IntersectMethod::RAY_MARCHING);
+
+        float value(const Point &p) const override;
+
+        SDFType type() const override;
+
+        float& t();
+
+    private:
+        float m_t; 
+    };
+
     /************************** SDF Binary Operator ******************************/
 
     class SDFBinaryOperator : public SDFNode

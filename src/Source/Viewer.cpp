@@ -268,16 +268,13 @@ int Viewer::render_any()
     ImGuiIO &io = ImGui::GetIO();
     (void)io;
 
+    handle_event();
+
     if (m_spline_demo)
     {
-        if (!io.WantCaptureKeyboard && !io.WantCaptureMouse)
-        {
-            handle_event_spline();
-        }
-
         if (m_mSpline->has_position())
         {
-            if (m_show_faces_spline)
+            if (m_show_faces)
             {
                 glEnable(GL_POLYGON_OFFSET_FILL);
                 glPolygonOffset(1.0, 1.0);
@@ -286,7 +283,7 @@ int Viewer::render_any()
                 glDisable(GL_POLYGON_OFFSET_FILL);
             }
 
-            if (m_show_edges_spline)
+            if (m_show_edges)
             {
                 glUseProgram(m_program_edges);
 
@@ -298,7 +295,7 @@ int Viewer::render_any()
                 m_mSpline->draw(m_program_edges, true, false, false, false, false);
             }
 
-            if (m_show_points_spline)
+            if (m_show_points)
             {
                 glUseProgram(m_program_points);
 
@@ -318,14 +315,9 @@ int Viewer::render_any()
     }
     else if (m_patch_demo)
     {
-        if (!io.WantCaptureKeyboard && !io.WantCaptureMouse)
-        {
-            handle_event_patch();
-        }
-
         if (m_mPatch->has_position())
         {
-            if (m_show_faces_patch)
+            if (m_show_faces)
             {
                 glEnable(GL_POLYGON_OFFSET_FILL);
                 glPolygonOffset(1.0, 1.0);
@@ -334,7 +326,7 @@ int Viewer::render_any()
                 glDisable(GL_POLYGON_OFFSET_FILL);
             }
 
-            if (m_show_edges_patch)
+            if (m_show_edges)
             {
                 glUseProgram(m_program_edges);
 
@@ -346,7 +338,7 @@ int Viewer::render_any()
                 m_mPatch->draw(m_program_edges, true, false, false, false, false);
             }
 
-            if (m_show_points_patch)
+            if (m_show_points)
             {
                 glUseProgram(m_program_points);
 
@@ -367,14 +359,9 @@ int Viewer::render_any()
     }
     else if (m_sdf_demo)
     {
-        if (!io.WantCaptureKeyboard && !io.WantCaptureMouse)
-        {
-            handle_event_sdf();
-        }
-
         if (m_mSDF->has_position())
         {
-            if (m_show_faces_implicit)
+            if (m_show_faces)
             {
                 glEnable(GL_POLYGON_OFFSET_FILL);
                 glPolygonOffset(1.0, 1.0);
@@ -383,7 +370,7 @@ int Viewer::render_any()
                 glDisable(GL_POLYGON_OFFSET_FILL);
             }
 
-            if (m_show_edges_implicit)
+            if (m_show_edges)
             {
                 glUseProgram(m_program_edges);
 
@@ -395,7 +382,7 @@ int Viewer::render_any()
                 m_mSDF->draw(m_program_edges, true, false, false, false, false);
             }
 
-            if (m_show_points_implicit)
+            if (m_show_points)
             {
                 glUseProgram(m_program_points);
 
@@ -417,71 +404,45 @@ int Viewer::render_any()
     return 0;
 }
 
-int Viewer::handle_event_spline()
+int Viewer::handle_event()
 {
-
-    if (key_state(SDLK_f))
+    if (!io.WantCaptureKeyboard && !io.WantCaptureMouse)
     {
-        clear_key_state(SDLK_f);
-        m_show_faces_spline = !m_show_faces_spline;
-    }
-
-    if (key_state(SDLK_e))
-    {
-        clear_key_state(SDLK_e);
-        m_show_edges_spline = !m_show_edges_spline;
-    }
-
-    if (key_state(SDLK_v))
-    {
-        clear_key_state(SDLK_v);
-        m_show_points_spline = !m_show_points_spline;
-    }
-
-    return 0;
-}
-
-int Viewer::handle_event_patch()
-{
-    if (key_state(SDLK_f))
-    {
-        clear_key_state(SDLK_f);
-        m_show_faces_patch = !m_show_faces_patch;
-    }
-
-    if (key_state(SDLK_e))
-    {
-        clear_key_state(SDLK_e);
-        m_show_edges_patch = !m_show_edges_patch;
-    }
-
-    if (key_state(SDLK_v))
-    {
-        clear_key_state(SDLK_v);
-        m_show_points_patch = !m_show_points_patch;
-    }
-
-    return 0;
-}
-
-int Viewer::handle_event_sdf()
-{
-    if (key_state(SDLK_f))
-    {
-        clear_key_state(SDLK_f);
-        m_show_faces_implicit = !m_show_faces_implicit;
-    }
-
-    if (key_state(SDLK_e))
-    {
-        clear_key_state(SDLK_e);
-        m_show_edges_implicit = !m_show_edges_implicit;
-    }
-
-    if (key_state(SDLK_v))
-    {
-        clear_key_state(SDLK_v);
-        m_show_points_implicit = !m_show_points_implicit;
+        if (key_state(SDLK_TAB))
+        {
+            clear_key_state(SDLK_TAB);
+            m_show_ui = !m_show_ui;
+        }
+        if (key_state(SDLK_f))
+        {
+            clear_key_state(SDLK_f);
+            m_show_faces = !m_show_faces;
+        }
+        if (key_state(SDLK_e))
+        {
+            clear_key_state(SDLK_e);
+            m_show_edges = !m_show_edges;
+        }
+        if (key_state(SDLK_v))
+        {
+            clear_key_state(SDLK_v);
+            m_show_points = !m_show_points;
+        }
+        if (m_spline_demo && key_state(SDLK_c))
+        {
+            clear_key_state(SDLK_c);
+            m_show_spline_curve = !m_show_spline_curve;
+        }
+        if (m_patch_demo && key_state(SDLK_g))
+        {
+            clear_key_state(SDLK_g);
+            m_show_patch_grid = !m_show_patch_grid;
+        }
+        if (m_sdf_demo && key_state(SDLK_b))
+        {
+            clear_key_state(SDLK_b);
+            m_show_sdf_box = !m_show_sdf_box;
+        }
     }
 
     return 0;
@@ -538,6 +499,13 @@ int Viewer::render_ui()
         {
             ImGui::SliderFloat("Point size", &m_size_point, 1.f, 50.f, "%.2f");
             ImGui::SliderFloat("Edge size", &m_size_edge, 1.f, 25.f, "%.2f");
+
+            ImGui::Checkbox("Faces (f)", &m_show_faces);
+            ImGui::SameLine();
+            ImGui::Checkbox("Edges (e)", &m_show_edges);
+            ImGui::SameLine();
+            ImGui::Checkbox("Points (v)", &m_show_points);
+
             if (ImGui::CollapsingHeader("Colors"))
             {
                 ImGui::ColorPicker3("Point color", &m_color_point[0]);
@@ -554,6 +522,7 @@ int Viewer::render_ui()
                 render_params_sdf();
         }
 
+        ImGui::SeparatorText("SAVE MESH");
         ImGui::InputTextWithHint("Filename", "ex : my_mesh", &m_filename);
         if (ImGui::Button("Save mesh"))
         {
@@ -684,11 +653,10 @@ int Viewer::render_stats_patch()
 {
     //! Statistiques
     ImGui::SeparatorText("GEOMETRY");
-    // ImGui::Text("#Triangle : %i ", m_mTeapot->triangle_count());
     ImGui::Text("#Triangle : %i ", m_mPatch->triangle_count());
-    // ImGui::Text("#vertex : %i ", m_mTeapot->vertex_count());
     ImGui::Text("#vertex : %i ", m_mPatch->vertex_count());
     ImGui::Text("#Control points : %i ", m_patch->point_count());
+    ImGui::Text("Resolution : %i ", m_patch_resolution);
     ImGui::Text("Poligonize Time : %i ms %i us", m_ppolytms, m_ppolytus);
 
     return 0;
@@ -702,13 +670,7 @@ int Viewer::render_params_patch()
     ImGui::InputText("X", surface_function_input_x, IM_ARRAYSIZE(surface_function_input_x));
     ImGui::InputText("Y", surface_function_input_y, IM_ARRAYSIZE(surface_function_input_y));
     ImGui::InputText("Z", surface_function_input_z, IM_ARRAYSIZE(surface_function_input_z));
-    ImGui::Checkbox("Faces", &m_show_faces_patch);
-    ImGui::SameLine();
-    ImGui::Checkbox("Edges", &m_show_edges_patch);
-    ImGui::SameLine();
-    ImGui::Checkbox("Points", &m_show_points_patch);
-    ImGui::SameLine();
-    ImGui::Checkbox("Grid", &m_show_patch_grid);
+    ImGui::Checkbox("Grid (g)", &m_show_patch_grid);
     ImGui::NewLine();
     if (ImGui::Button("Render"))
     {
@@ -755,7 +717,11 @@ int Viewer::render_params_patch()
 
         m_ppolytms = m_timer.ms();
         m_ppolytus = m_timer.us();
+    }
 
+    ImGui::SameLine();
+    if (ImGui::Button("Center camera"))
+    {
         center_camera(*m_mPatch);
     }
 
@@ -768,6 +734,7 @@ int Viewer::render_stats_spline()
     ImGui::Text("#Triangle : %i ", m_mSpline->triangle_count());
     ImGui::Text("#vertex : %i ", m_mSpline->vertex_count());
     ImGui::Text("#Control points : %i ", m_spline->point_count());
+    ImGui::Text("Resolution : %i ", m_spline_resolution);
     ImGui::Text("Poligonize Time : %i ms %i us", m_spolytms, m_spolytus);
 
     return 0;
@@ -781,15 +748,9 @@ int Viewer::render_params_spline()
     ImGui::InputText("X", curve_function_input_x, IM_ARRAYSIZE(curve_function_input_x));
     ImGui::InputText("Y", curve_function_input_y, IM_ARRAYSIZE(curve_function_input_y));
     ImGui::InputText("Z", curve_function_input_z, IM_ARRAYSIZE(curve_function_input_z));
-    ImGui::Checkbox("Faces", &m_show_faces_spline);
-    ImGui::SameLine();
-    ImGui::Checkbox("Edges", &m_show_edges_spline);
-    ImGui::SameLine();
-    ImGui::Checkbox("Points", &m_show_points_spline);
-    ImGui::SameLine();
-    ImGui::Checkbox("Curve", &m_show_spline_curve);
     ImGui::Text("You can use the two variables 't' and 'a' (angle value) in the expression below :");
     ImGui::InputText("Radial Function", spline_radial_function_input, IM_ARRAYSIZE(spline_radial_function_input));
+    ImGui::Checkbox("Curve (c)", &m_show_spline_curve);
     if (ImGui::Button("Render"))
     {
         set_expression_string(m_expr_spline, curve_function_input_x, 0);
@@ -831,7 +792,11 @@ int Viewer::render_params_spline()
 
         m_spolytms = m_timer.ms();
         m_spolytus = m_timer.us();
+    }
 
+    ImGui::SameLine();
+    if (ImGui::Button("Center camera"))
+    {
         center_camera(*m_mSpline);
     }
 
@@ -843,6 +808,7 @@ int Viewer::render_stats_sdf()
     ImGui::SeparatorText("GEOMETRY");
     ImGui::Text("#Triangle : %i ", m_mSDF->triangle_count());
     ImGui::Text("#vertex : %i ", m_mSDF->vertex_count());
+    ImGui::Text("Resolution : %i ", m_sdf_resolution);
     ImGui::Text("Poligonize Time : %i ms %i us", m_ipolytms, m_ipolytus);
     ImGui::Text("Value call count : %i", m_sdf_tree->value_call_count());
     return 0;
@@ -872,13 +838,7 @@ int Viewer::render_params_sdf()
         ImGui::SliderFloat3("Pmin box", pmin, -10.f, 10.f, "%.2f");
         ImGui::SliderFloat3("Pmax box", pmax, -10.f, 10.f, "%.2f");
     }
-    ImGui::Checkbox("Faces", &m_show_faces_implicit);
-    ImGui::SameLine();
-    ImGui::Checkbox("Edges", &m_show_edges_implicit);
-    ImGui::SameLine();
-    ImGui::Checkbox("Points", &m_show_points_implicit);
-    ImGui::SameLine();
-    ImGui::Checkbox("implicit space", &m_show_sdf_box);
+    ImGui::Checkbox("Box (b)", &m_show_sdf_box);
 
     if (ImGui::SliderInt("Resolution", &m_sdf_resolution, 3, 1000))
     {
@@ -945,11 +905,13 @@ void Viewer::set_sdf_primitive()
         if (ImGui::TreeNode("Sphere"))
         {
             static float radius = 1.0f;
+            static Point center = {0., 0., 0.};
             ImGui::InputFloat("Radius", &radius);
+            ImGui::InputFloat3("Radius", &center.x);
 
             if (ImGui::Button("Add Sphere"))
             {
-                m_sdf_node = gm::SDFSphere::create({0, 0, 0}, radius);
+                m_sdf_node = gm::SDFSphere::create(center, radius);
             }
             ImGui::TreePop();
         }
@@ -1082,7 +1044,9 @@ void Viewer::set_sdf_operator()
         }
         ImGui::EndDisabled();
 
-        auto &node = m_sdf_root ? m_sdf_root : m_sdf_node;
+        ImGui::Checkbox("Apply transform on root node", &m_apply_transform_on_root);
+
+        auto &node = m_apply_transform_on_root ? m_sdf_root : m_sdf_node;
         if (ImGui::CollapsingHeader("Unary Operator"))
         {
             if (ImGui::TreeNode("Hull"))
@@ -1095,7 +1059,16 @@ void Viewer::set_sdf_operator()
                 }
                 ImGui::TreePop();
             }
-
+            if (ImGui::TreeNode("Repetition"))
+            {
+                static float t = 1;
+                ImGui::InputFloat("T", &t);
+                if (ImGui::Button("Add Repetition"))
+                {
+                    node = gm::SDFRepetition::create(node, t);
+                }
+                ImGui::TreePop();
+            }
             if (ImGui::CollapsingHeader("Transform"))
             {
                 if (ImGui::TreeNode("Translation"))
@@ -1249,6 +1222,10 @@ void Viewer::render_node_ui(Ref<gm::SDFNode> &node)
         {
             ImGui::InputFloat("Thickness", &hull->thickness());
         }
+        else if (auto repetition = dynamic_cast<gm::SDFRepetition *>(node.get()))
+        {
+            ImGui::InputFloat("T", &repetition->t());
+        }
 
         auto [left, right] = node->children();
         render_node_ui(left);
@@ -1280,8 +1257,6 @@ void Viewer::render_sdf_buttons()
 
             m_ipolytms = m_timer.ms();
             m_ipolytus = m_timer.us();
-
-            center_camera(*m_mSDF_box);
         }
 
         m_sdf_node = nullptr;
@@ -1295,5 +1270,11 @@ void Viewer::render_sdf_buttons()
         m_node_1_selection = true;
         m_sdf_tree->root() = nullptr;
         m_mSDF->clear();
+        m_sdf_tree->reset_value_call_count();
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Center camera"))
+    {
+        center_camera(*m_mSDF_box);
     }
 }

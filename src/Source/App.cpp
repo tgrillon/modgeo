@@ -83,14 +83,16 @@ int App::prerender()
     {
         const char *orbiter_filename = "app_orbiter.txt";
         // copy / export / write orbiter
-        if (key_state('c'))
+        if (key_state(SDLK_LCTRL) && key_state('c'))
         {
+            clear_key_state(SDLK_LCTRL);
             clear_key_state('c');
             m_camera.write_orbiter(orbiter_filename);
         }
         // paste / read orbiter
-        if (key_state('o'))
+        if (key_state(SDLK_LCTRL) && key_state('o'))
         {
+            clear_key_state(SDLK_LCTRL);
             clear_key_state('o');
 
             Orbiter tmp;
@@ -102,10 +104,10 @@ int App::prerender()
         }
 
         // screenshot
-        if (key_state('s'))
+        if (key_state(SDLK_F1))
         {
             static int calls = 1;
-            clear_key_state('s');
+            clear_key_state(SDLK_F1);
             screenshot("app", calls++);
         }
     }

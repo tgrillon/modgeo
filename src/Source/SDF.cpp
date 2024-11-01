@@ -155,6 +155,33 @@ namespace gm
         return m_thickness;
     }
 
+    /************************** SDF Repetition ******************************/
+
+    SDFRepetition::SDFRepetition(const Ref<SDFNode> &n, float t, float lambda, IntersectMethod im) : SDFUnaryOperator(n, lambda, im), m_t(t)
+    {
+    }
+
+    Ref<SDFRepetition> SDFRepetition::create(const Ref<SDFNode> &n, float t, float lambda, IntersectMethod im)
+    {
+        return std::make_shared<SDFRepetition>(n, t, lambda, im);
+    }
+
+    float SDFRepetition::value(const Point &p) const
+    {
+        Point q = Point(p - m_t * round(p / m_t));
+        return m_node->value(q);
+    }
+
+    SDFType SDFRepetition::type() const
+    {
+        return SDFType::UNARY_OPERATOR_REPETITION;
+    }
+
+    float &SDFRepetition::t()
+    {
+        return m_t;
+    }
+
     /********************** SDF Binary Operator ************************/
 
     SDFBinaryOperator::SDFBinaryOperator(const Ref<SDFNode> &left, const Ref<SDFNode> &right, float lambda, IntersectMethod im) : SDFNode(lambda, im), m_left(left), m_right(right)
